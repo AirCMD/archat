@@ -1,847 +1,228 @@
 <!doctype html>
 <html lang="uk">
-
 <head>
-
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Гуменчат — copy_pasta</title>
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
+<link rel="stylesheet" href="../css/style.css">
 
-<title>Арчат — copy_pasta</title>
-
-
-<style>
-
-html,
-body{
-  margin:0;
-  padding:0;
-
-  background:#fff;
-
-  font-family:Arial,Helvetica,sans-serif;
-
-  font-size:12px;
-  line-height:14px;
-
-  color:#222;
-}
-
-*{
-  box-sizing:border-box;
-}
-
-#archat-site{
-  width:100%;
-  min-height:100vh;
-
-  padding:12px;
-
-  background:#fff;
-
-  border:1px solid #777;
-}
-
-#archat-site a{
-  color:#444;
-}
-
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-.archat-header{
-
-  margin:0 0 10px;
-
-  padding:5px 8px;
-
-  background:
-    linear-gradient(#626262,#3b3b3b);
-
-  border:1px solid #222;
-
-  color:#fff;
-
-  font-weight:bold;
-
-  letter-spacing:1px;
-
-  text-transform:uppercase;
-}
-
-
-/* =========================================================
-   LAYOUT
-   ========================================================= */
-
-.site-layout{
-
-  display:table;
-
-  width:100%;
-
-  border-collapse:separate;
-
-  border-spacing:10px 0;
-}
-
-.site-left{
-
-  display:table-cell;
-
-  width:165px;
-
-  vertical-align:top;
-}
-
-.site-right{
-
-  display:table-cell;
-
-  vertical-align:top;
-}
-
-
-/* =========================================================
-   LEFT
-   ========================================================= */
-
-.left-box{
-
-  padding:3px 7px;
-
-  background:#f0f0f0;
-
-  border:1px solid #999;
-}
-
-.site-name{
-
-  margin:1px 0 6px;
-
-  padding:0 0 4px;
-
-  border-bottom:1px solid #bcbcbc;
-
-  color:#111;
-
-  font-size:15px;
-
-  line-height:17px;
-
-  font-weight:bold;
-
-  text-align:center;
-
-  word-break:break-word;
-}
-
-.main-avatar{
-
-  display:block;
-
-  width:100%;
-
-  height:228px;
-
-  margin:0 0 6px;
-
-  object-fit:cover;
-
-  background:#ddd;
-
-  border:1px solid #888;
-}
-
-.archat-button{
-
-  display:block;
-
-  width:100%;
-
-  margin:0 0 5px;
-
-  padding:4px 0;
-
-  background:
-    linear-gradient(#fff176,#fbc02d);
-
-  border:1px solid #a78119;
-
-  color:#000 !important;
-
-  font-size:10px;
-
-  line-height:13px;
-
-  font-weight:bold;
-
-  text-align:center;
-
-  text-decoration:none;
-
-  text-transform:uppercase;
-}
-
-.archat-button:hover{
-
-  background:
-    linear-gradient(#fff59d,#fdd835);
-}
-
-.nav-menu{
-
-  border-top:1px solid #999;
-}
-
-.nav-item{
-
-  display:block;
-
-  width:100%;
-
-  padding:3px 2px;
-
-  border-bottom:1px solid #c7c7c7;
-
-  color:#444;
-
-  font-size:11px;
-
-  line-height:13px;
-
-  text-decoration:underline;
-}
-
-.nav-item:hover{
-
-  background:#e2e2e2;
-
-  color:#000;
-
-  text-decoration:none;
-}
-
-.account-box{
-
-  margin:8px 0 0;
-
-  padding:5px 4px;
-
-  border-top:1px solid #999;
-
-  text-align:center;
-}
-
-.account-text{
-
-  margin:0 0 5px;
-
-  color:#555;
-
-  font-size:9px;
-
-  line-height:12px;
-}
-
-.account-link{
-
-  display:block;
-
-  margin:2px 0;
-
-  color:#444;
-
-  font-size:10px;
-
-  line-height:12px;
-
-  font-weight:bold;
-
-  text-decoration:underline;
-}
-
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
-
-.profile-box{
-
-  margin:0 0 8px;
-
-  padding:7px;
-
-  background:#fff;
-
-  border:1px solid #aaa;
-}
-
-.profile-header{
-
-  margin:0 0 7px;
-
-  padding:5px 7px;
-
-  background:#f0f0f0;
-
-  border:1px solid #999;
-
-  font-weight:bold;
-}
-
-.profile-info{
-
-  padding:6px 7px;
-
-  background:#f9f9f9;
-
-  border:1px solid #aaa;
-
-  font-size:11px;
-
-  line-height:15px;
-}
-
-.profile-status{
-
-  margin-top:4px;
-
-  color:#2e7d32;
-
-  font-size:10px;
-
-  line-height:12px;
-
-  font-style:italic;
-}
-
-
-/* =========================================================
-   POSTS
-   ========================================================= */
-
-.posts-header{
-
-  margin:8px 0 5px;
-
-  padding:4px 7px;
-
-  background:#f0f0f0;
-
-  border:1px solid #999;
-
-  font-weight:bold;
-}
-
-.profile-post{
-
-  margin:0 0 7px;
-
-  background:#fff;
-
-  border:1px solid #aaa;
-}
-
-.profile-post-title{
-
-  padding:4px 7px;
-
-  background:#f5f5f5;
-
-  border-bottom:1px solid #aaa;
-
-  font-weight:bold;
-}
-
-.profile-post-body{
-
-  padding:6px 7px;
-
-  color:#333;
-
-  font-size:11px;
-
-  line-height:15px;
-}
-
-.profile-post-date{
-
-  padding:3px 7px;
-
-  border-top:1px solid #ddd;
-
-  color:#888;
-
-  font-size:9px;
-
-  line-height:11px;
-}
-
-
-/* =========================================================
-   ACTIONS
-   ========================================================= */
-
-.post-actions{
-
-  padding:4px 7px;
-
-  border-top:1px solid #ddd;
-
-  background:#fafafa;
-}
-
-.like-button,
-.comment-button{
-
-  display:inline-block;
-
-  margin-right:8px;
-
-  padding:1px 3px;
-
-  border:0;
-
-  background:transparent;
-
-  color:#555;
-
-  font-family:Arial,Helvetica,sans-serif;
-
-  font-size:10px;
-
-  line-height:13px;
-
-  cursor:pointer;
-}
-
-.like-button:hover,
-.comment-button:hover{
-
-  color:#000;
-
-  text-decoration:underline;
-}
-
-.like-button.liked{
-
-  color:#c62828;
-
-  font-weight:bold;
-}
-
-
-/* =========================================================
-   COMMENTS
-   ========================================================= */
-
-.comments-area{
-
-  display:none;
-
-  padding:6px 7px;
-
-  background:#f8f8f8;
-
-  border-top:1px solid #ddd;
-}
-
-.comments-area.open{
-
-  display:block;
-}
-
-.fake-comment{
-
-  margin:0 0 5px;
-
-  padding:4px 5px;
-
-  background:#fff;
-
-  border:1px solid #ccc;
-
-  font-size:10px;
-
-  line-height:13px;
-}
-
-.fake-comment-name{
-
-  margin-bottom:2px;
-
-  color:#222;
-
-  font-weight:bold;
-}
-
-.comment-form{
-
-  margin-top:6px;
-}
-
-.comment-input{
-
-  display:block;
-
-  width:100%;
-
-  min-height:45px;
-
-  padding:4px 5px;
-
-  resize:vertical;
-
-  background:#fff;
-
-  border:1px solid #aaa;
-
-  color:#222;
-
-  font-family:Arial,Helvetica,sans-serif;
-
-  font-size:10px;
-
-  line-height:13px;
-}
-
-.comment-send{
-
-  margin-top:4px;
-
-  padding:3px 8px;
-
-  background:#eee;
-
-  border:1px solid #999;
-
-  color:#444;
-
-  font-size:10px;
-
-  line-height:12px;
-
-  cursor:pointer;
-}
-
-
-/* =========================================================
-   SHOW MORE
-   ========================================================= */
-
-.show-more{
-
-  display:block;
-
-  width:100%;
-
-  margin:2px 0;
-
-  padding:5px 7px;
-
-  background:#f0f0f0;
-
-  border:1px solid #999;
-
-  color:#444;
-
-  font-size:10px;
-
-  line-height:13px;
-
-  font-weight:bold;
-
-  text-align:center;
-
-  text-decoration:underline;
-
-  cursor:pointer;
-}
-
-.show-more.hidden{
-
-  display:none;
-}
-
-
-/* =========================================================
-   RULES
-   ========================================================= */
-
-.rules-box{
-
-  margin:8px 0 0;
-
-  padding:5px 8px;
-
-  background:#fff;
-
-  border:1px solid #aaa;
-
-  color:#444;
-
-  font-size:11px;
-
-  line-height:14px;
-}
-
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
-.footer-line{
-
-  margin-top:7px;
-
-  padding-top:4px;
-
-  border-top:1px solid #ccc;
-
-  color:#888;
-
-  font-size:9px;
-
-  line-height:11px;
-
-  text-align:center;
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media(max-width:600px){
-
-  .site-layout{
-
-    display:block;
-  }
-
-  .site-left,
-  .site-right{
-
-    display:block;
-
-    width:100%;
-  }
-
-  .site-left{
-
-    margin-bottom:8px;
-  }
-
-  #archat-site{
-
-    padding:7px;
-  }
-
-}
-
-</style>
-
+<script src="../js/profiles.js"></script>
+<script src="../js/copy_pasta.js"></script>
 </head>
-
 
 <body>
 
+<div id="hoomenchat-site">
 
-<div id="archat-site">
-
-
-<div class="archat-header">
-АРЧАТ
+<div class="hoomenchat-header">
+ГУМЕНЧАТ
 </div>
-
 
 <div class="site-layout">
 
-
-<!-- =====================================================
-     LEFT
-     ===================================================== -->
+<!-- ЛІВА КОЛОНКА -->
 
 <div class="site-left">
 
 <div class="left-box">
 
-
-<div
-  class="site-name"
-  id="side-nickname"
->
+<div class="site-name" id="profile-name">
+copy_pasta
 </div>
-
 
 <img
   class="main-avatar"
-  id="side-avatar"
+  id="profile-avatar"
   src=""
-  alt=""
+  alt="copy_pasta"
 >
-
 
 <a
   class="archat-button"
-  href="../index.html"
+  href="https://aircmd.github.io/archat/"
 >
-🏠 АРЧАТ
+📩 АРЧАТ
 </a>
-
 
 <div class="nav-menu">
 
-
-<a
-  class="nav-item"
-  href="../index.html"
->
+<a class="nav-item" href="../index.html">
 Головна
 </a>
 
-
-<a
-  class="nav-item"
-  href="../profiles.html"
->
-Профілі
+<a class="nav-item" href="../profiles.html">
+Гумени
 </a>
 
-
-<a
-  class="nav-item"
-  href="#"
->
-Стрічка
+<a class="nav-item" href="../droomens.html">
+Друмени
 </a>
 
-
-<a
-  class="nav-item"
-  href="#"
->
-Чати
+<a class="nav-item" href="../activity.html">
+Стрічерчат
 </a>
 
-
-<a
-  class="nav-item"
-  href="#"
->
+<a class="nav-item" href="../islands.html">
 Острови
 </a>
 
-
-<a
-  class="nav-item"
-  href="#"
->
+<a class="nav-item" href="../rules.html">
 Правила
 </a>
 
-
 </div>
-
 
 <div class="account-box">
 
-
 <div class="account-text">
-Немає акаунта?
+Немає гумгайла?
 </div>
 
-
-<a
-  class="account-link"
-  href="#"
->
+<a class="account-link" href="#">
 ЗАРЕЄСТРУВАТИСЯ
 </a>
 
-
-<a
-  class="account-link"
-  href="#"
->
+<a class="account-link" href="#">
 ВХІД
 </a>
 
+</div>
+
+</div>
 
 </div>
 
 
+<!-- ПРАВА КОЛОНКА -->
+
+<div class="site-right">
+
+<div class="profile-box">
+
+<div class="profile-header">
+Мій гумгайл: <span id="profile-header-name">copy_pasta</span>
 </div>
+
+<div class="profile-info">
+
+<strong id="profile-info-name">
+copy_pasta
+</strong>
+
+<div id="profile-family"></div>
+
+<div>
+Статус:
+<span id="profile-status">
+ліньки розписувати
+</span>
+</div>
+
+<div class="profile-status">
+● онлайн
+</div>
+
+</div>
+
+</div>
+
+
+<div class="posts-header">
+Дописи <span id="posts-owner">copy_pasta</span> — <span id="posts-count">25</span>
+</div>
+
+
+<!-- =====================================================
+     НОВИЙ ТИМЧАСОВИЙ ДОПИС
+     ===================================================== -->
+
+<button
+  class="create-post-launcher"
+  id="new-post-launcher"
+  type="button"
+>
+＋ Новий допис
+</button>
+
+
+<div
+  class="create-post-box collapsed"
+  id="create-post-box"
+>
+
+<div class="create-post-title">
+Створити допис від copy_pasta
+</div>
+
+<input
+  class="create-post-input"
+  id="new-post-title"
+  type="text"
+  maxlength="200"
+  placeholder="Заголовок допису..."
+>
+
+<textarea
+  class="create-post-input create-post-text"
+  id="new-post-text"
+  placeholder="Текст допису..."
+></textarea>
+
+<input
+  class="create-post-file"
+  id="new-post-images"
+  type="file"
+  accept="image/jpeg,image/png,image/gif,image/webp"
+  multiple
+>
+
+<div class="create-post-file-note">
+Можна додати кілька зображень. Максимальний розмір одного зображення — 10 МБ.
+</div>
+
+<div
+  class="create-post-previews"
+  id="new-post-previews"
+></div>
+
+<div class="create-post-actions">
+
+<button
+  class="create-post-button"
+  id="publish-post"
+  type="button"
+>
+Опублікувати
+</button>
+
+<button
+  class="create-post-button"
+  id="cancel-new-post"
+  type="button"
+>
+Скасувати
+</button>
+
+</div>
+
+<div
+  class="create-post-error"
+  id="create-post-error"
+></div>
 
 </div>
 
 
 <!-- =====================================================
-     RIGHT
+     ПОСТИ
      ===================================================== -->
 
-<div class="site-right">
-
-
-<div class="profile-box">
-
-
-<div
-  class="profile-header"
-  id="profile-header"
->
-</div>
-
-
-<div class="profile-info">
-
-
-<strong
-  id="profile-nickname"
->
-</strong>
-
-
-<div id="profile-family">
-</div>
-
-
-<div id="profile-description">
-</div>
-
-
-<div
-  class="profile-status"
-  id="profile-status"
->
-</div>
-
-
-</div>
-
-</div>
-
-
-<div
-  class="posts-header"
-  id="posts-header"
->
-</div>
-
-
-<div id="posts-container">
-</div>
-
+<div id="copy-posts"></div>
 
 <button
-  class="show-more"
-  id="show-more"
+  class="show-more hidden"
+  id="show-more-posts"
   type="button"
 >
 показати ще...
@@ -854,561 +235,528 @@ body{
 <a href="../rules.html">
 ПРАВИЛ
 </a>
-нашого ресурсу.
+нашого ресурсу для приємного та друмнього часу разом з нами.
+
+</div>
+
+
+<div class="statistics-box">
+
+<div class="statistics-title">
+Статистика Гуменчату
+</div>
+
+<div>
+Зареєстровано гуменів:
+<span
+  class="statistics-number"
+  id="registered-hoomen"
+></span>
+</div>
+
+<div>
+Зараз онлайн:
+<span
+  class="statistics-online"
+  id="online-hoomen"
+></span>
+</div>
+
+<div>
+Гуменів сьогодні завітало:
+<span
+  class="statistics-number"
+  id="today-hoomen"
+></span>
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     IMAGE VIEWER
+     ===================================================== -->
+
+<div
+  class="image-viewer"
+  id="post-image-viewer"
+>
+
+<button
+  class="image-viewer-close"
+  id="post-image-viewer-close"
+  type="button"
+>
+✕
+</button>
+
+<button
+  class="image-viewer-prev"
+  id="post-image-viewer-prev"
+  type="button"
+>
+‹
+</button>
+
+<img
+  class="image-viewer-image"
+  id="post-image-viewer-image"
+  src=""
+  alt="Зображення допису"
+>
+
+<button
+  class="image-viewer-next"
+  id="post-image-viewer-next"
+  type="button"
+>
+›
+</button>
 
 </div>
 
 
 <div class="footer-line">
-Арчат — місце для вигаданих акаунтів.
-</div>
-
-
+Гуменчат — місце для гуменів.
 </div>
 
 </div>
 
 </div>
 
-
-<script src="copy_pasta.js"></script>
+</div>
 
 
 <script>
 
+/* =========================================================
+   COPY_PASTA PROFILE
+   ========================================================= */
+
 (function(){
 
-  var profile =
-    COPY_PASTA_PROFILE;
+"use strict";
 
 
-  var posts =
-    profile.posts || [];
+/* =========================================================
+   ПРОФІЛЬ
+   ========================================================= */
 
+var profile = window.HOOMEN_PROFILES
+  ? window.HOOMEN_PROFILES["copy_pasta"]
+  : null;
 
-  var visiblePosts = 3;
+if(profile){
 
-  var postsPerClick = 5;
+  var avatar =
+    document.getElementById("profile-avatar");
 
+  var name =
+    document.getElementById("profile-name");
 
-  /* =====================================================
-     ОСНОВНА ІНФОРМАЦІЯ
-     ===================================================== */
+  var headerName =
+    document.getElementById("profile-header-name");
 
+  var infoName =
+    document.getElementById("profile-info-name");
 
-  document.title =
-    "Арчат — " +
-    profile.nickname;
+  var owner =
+    document.getElementById("posts-owner");
 
-
-  document.getElementById(
-    "side-nickname"
-  ).textContent =
-    profile.nickname;
-
-
-  document.getElementById(
-    "side-avatar"
-  ).src =
-    profile.avatar;
-
-
-  document.getElementById(
-    "side-avatar"
-  ).alt =
-    profile.nickname;
-
-
-  document.getElementById(
-    "profile-header"
-  ).textContent =
-    "Мій аргайл: " +
-    profile.nickname;
-
-
-  document.getElementById(
-    "profile-nickname"
-  ).textContent =
-    profile.nickname;
-
-
-  document.getElementById(
-    "profile-description"
-  ).textContent =
-    "Статус: " +
-    profile.description;
-
-
-  document.getElementById(
-    "profile-status"
-  ).textContent =
-    profile.statusText;
-
-
-  /* =====================================================
-     СІМЕЙКА
-     ===================================================== */
+  var status =
+    document.getElementById("profile-status");
 
   var family =
-    document.getElementById(
-      "profile-family"
-    );
+    document.getElementById("profile-family");
 
+  if(name){
+    name.textContent = profile.name;
+  }
 
-  if(profile.family){
+  if(headerName){
+    headerName.textContent = profile.name;
+  }
+
+  if(infoName){
+    infoName.textContent = profile.name;
+  }
+
+  if(owner){
+    owner.textContent = profile.name;
+  }
+
+  if(status){
+    status.textContent = profile.status || "";
+  }
+
+  if(avatar){
+    avatar.src = profile.avatar;
+    avatar.alt = profile.name;
+  }
+
+  if(family && profile.family){
 
     family.innerHTML =
-      "Сімейка: <b>" +
-      '<a href="' +
-      profile.familyUrl +
-      '">' +
-      profile.family +
-      '</a>' +
-      "</b>";
+      "Сімейка: <b><a href=\"" +
+      profile.family.url +
+      "\">" +
+      profile.family.text +
+      "</a></b>";
+
+  }
+
+}
+
+
+/* =========================================================
+   ЕЛЕМЕНТИ
+   ========================================================= */
+
+var postsContainer =
+  document.getElementById("copy-posts");
+
+var postsCount =
+  document.getElementById("posts-count");
+
+var showMore =
+  document.getElementById("show-more-posts");
+
+var newPostLauncher =
+  document.getElementById("new-post-launcher");
+
+var createPostBox =
+  document.getElementById("create-post-box");
+
+var newPostTitle =
+  document.getElementById("new-post-title");
+
+var newPostText =
+  document.getElementById("new-post-text");
+
+var newPostImages =
+  document.getElementById("new-post-images");
+
+var newPostPreviews =
+  document.getElementById("new-post-previews");
+
+var publishPost =
+  document.getElementById("publish-post");
+
+var cancelNewPost =
+  document.getElementById("cancel-new-post");
+
+var createPostError =
+  document.getElementById("create-post-error");
+
+
+/* =========================================================
+   ПОСТИ З COPY_PASTA.JS
+   ========================================================= */
+
+var permanentPosts =
+  Array.isArray(window.COPY_PASTA_POSTS)
+  ? window.COPY_PASTA_POSTS
+  : [];
+
+
+var visiblePosts = 3;
+var postsPerClick = 5;
+
+
+/* =========================================================
+   ТИМЧАСОВІ ПОСТИ
+   ========================================================= */
+
+var temporaryPosts = [];
+
+
+/*
+ * ВАЖЛИВО:
+ *
+ * temporaryPosts існує тільки в оперативній пам'яті
+ * цієї сторінки.
+ *
+ * НІ:
+ * localStorage
+ * sessionStorage
+ * cookies
+ * сервер
+ *
+ * Тому після F5 вони автоматично зникають.
+ */
+
+
+/* =========================================================
+   РЕНДЕР ПОСТІВ
+   ========================================================= */
+
+function getAllPosts(){
+
+  return temporaryPosts.concat(
+    permanentPosts
+  );
+
+}
+
+
+function renderPosts(){
+
+  postsContainer.innerHTML = "";
+
+  var allPosts =
+    getAllPosts();
+
+  var limit =
+    Math.min(
+      visiblePosts,
+      allPosts.length
+    );
+
+
+  for(
+    var i=0;
+    i<limit;
+    i++
+  ){
+
+    var post =
+      createPostElement(
+        allPosts[i]
+      );
+
+    postsContainer.appendChild(post);
 
   }
 
 
-  /* =====================================================
-     ЗАГОЛОВОК ПОСТІВ
-     ===================================================== */
+  if(postsCount){
 
-  document.getElementById(
-    "posts-header"
-  ).textContent =
-    "Дописи " +
-    profile.nickname +
-    " — " +
-    Number(
-      profile.postsCount ||
-      posts.length
-    ).toLocaleString(
-      "uk-UA"
-    );
-
-
-  /* =====================================================
-     СТВОРЕННЯ ПОСТУ
-     ===================================================== */
-
-  function createPost(
-    post
-  ){
-
-    var element =
-      document.createElement(
-        "div"
-      );
-
-
-    element.className =
-      "profile-post";
-
-
-    /* TITLE */
-
-    var title =
-      document.createElement(
-        "div"
-      );
-
-    title.className =
-      "profile-post-title";
-
-    title.textContent =
-      post.title || "";
-
-
-    /* BODY */
-
-    var body =
-      document.createElement(
-        "div"
-      );
-
-    body.className =
-      "profile-post-body";
-
-    body.textContent =
-      post.text || "";
-
-
-    /* ACTIONS */
-
-    var actions =
-      document.createElement(
-        "div"
-      );
-
-    actions.className =
-      "post-actions";
-
-
-    actions.innerHTML =
-
-      '<button class="like-button" type="button">' +
-
-      '♡ Подобається ' +
-
-      '<span class="like-count">' +
-
-      Number(
-        post.likes || 0
-      ).toLocaleString(
-        "uk-UA"
-      ) +
-
-      '</span>' +
-
-      '</button>' +
-
-
-      '<button class="comment-button" type="button">' +
-
-      '💬 Коментарі ' +
-
-      '<span class="comment-count">' +
-
-      (
-        post.comments
-        ?
-        post.comments.length
-        :
-        0
-      ) +
-
-      '</span>' +
-
-      '</button>';
-
-
-    /* COMMENTS */
-
-    var commentsArea =
-      document.createElement(
-        "div"
-      );
-
-    commentsArea.className =
-      "comments-area";
-
-
-    if(post.comments){
-
-      post.comments.forEach(
-        function(comment){
-
-          var fake =
-            document.createElement(
-              "div"
-            );
-
-          fake.className =
-            "fake-comment";
-
-
-          var name =
-            document.createElement(
-              "div"
-            );
-
-          name.className =
-            "fake-comment-name";
-
-          name.textContent =
-            comment.name;
-
-
-          fake.appendChild(
-            name
-          );
-
-
-          fake.appendChild(
-            document.createTextNode(
-              comment.text
-            )
-          );
-
-
-          commentsArea.appendChild(
-            fake
-          );
-
-        }
-      );
-
-    }
-
-
-    /* COMMENT FORM */
-
-    var form =
-      document.createElement(
-        "div"
-      );
-
-    form.className =
-      "comment-form";
-
-
-    form.innerHTML =
-
-      '<textarea class="comment-input" ' +
-
-      'placeholder="Написати коментар...">' +
-
-      '</textarea>' +
-
-
-      '<button class="comment-send" type="button">' +
-
-      'Відправити' +
-
-      '</button>';
-
-
-    commentsArea.appendChild(
-      form
-    );
-
-
-    /* DATE */
-
-    var date =
-      document.createElement(
-        "div"
-      );
-
-    date.className =
-      "profile-post-date";
-
-    date.textContent =
-      post.date || "";
-
-
-    /* APPEND */
-
-    element.appendChild(
-      title
-    );
-
-    element.appendChild(
-      body
-    );
-
-    element.appendChild(
-      actions
-    );
-
-    element.appendChild(
-      commentsArea
-    );
-
-    element.appendChild(
-      date
-    );
-
-
-    bindPostEvents(
-      element
-    );
-
-
-    return element;
+    postsCount.textContent =
+      allPosts.length;
 
   }
 
 
-  /* =====================================================
-     EVENTS
-     ===================================================== */
-
-  function bindPostEvents(
-    post
+  if(
+    showMore &&
+    visiblePosts < allPosts.length
   ){
 
-    var likeButton =
-      post.querySelector(
-        ".like-button"
-      );
+    showMore.className =
+      "show-more";
+
+  }else if(showMore){
+
+    showMore.className =
+      "show-more hidden";
+
+  }
+
+}
 
 
-    var commentButton =
-      post.querySelector(
-        ".comment-button"
-      );
+/* =========================================================
+   СТВОРЕННЯ HTML ПОСТУ
+   ========================================================= */
+
+function createPostElement(data){
+
+  var post =
+    document.createElement("div");
+
+  post.className =
+    "profile-post";
 
 
-    var sendButton =
-      post.querySelector(
-        ".comment-send"
-      );
+  /* TITLE */
+
+  var title =
+    document.createElement("div");
+
+  title.className =
+    "profile-post-title";
+
+  title.textContent =
+    data.title || "";
+
+  post.appendChild(title);
 
 
-    likeButton.addEventListener(
-      "click",
-      function(){
+  /* BODY */
 
-        var count =
-          likeButton.querySelector(
-            ".like-count"
-          );
+  var body =
+    document.createElement("div");
 
+  body.className =
+    "profile-post-body";
 
-        var number =
-          parseInt(
-            count.textContent
-              .replace(/\s/g,""),
-            10
-          );
+  body.textContent =
+    data.text || "";
+
+  post.appendChild(body);
 
 
-        if(
-          likeButton.classList
-            .contains("liked")
-        ){
+  /* IMAGES */
 
-          number--;
+  if(
+    data.images &&
+    data.images.length
+  ){
 
-          likeButton.classList
-            .remove("liked");
+    var gallery =
+      document.createElement("div");
 
-
-          likeButton.innerHTML =
-
-            "♡ Подобається " +
-
-            '<span class="like-count">' +
-
-            number.toLocaleString(
-              "uk-UA"
-            ) +
-
-            "</span>";
-
-        }else{
-
-          number++;
-
-          likeButton.classList
-            .add("liked");
+    gallery.className =
+      "post-images-grid";
 
 
-          likeButton.innerHTML =
+    data.images.forEach(
+      function(src,index){
 
-            "♥ Подобається " +
+        var frame =
+          document.createElement("div");
 
-            '<span class="like-count">' +
+        frame.className =
+          "post-image-frame";
 
-            number.toLocaleString(
-              "uk-UA"
-            ) +
 
-            "</span>";
+        var image =
+          document.createElement("img");
 
-        }
+        image.className =
+          "profile-post-image";
+
+        image.src =
+          src;
+
+        image.alt =
+          data.title || "Зображення";
+
+
+        image.addEventListener(
+          "click",
+          function(){
+
+            var urls =
+              data.images.slice();
+
+            openImageViewer(
+              urls,
+              index
+            );
+
+          }
+        );
+
+
+        frame.appendChild(image);
+
+        gallery.appendChild(frame);
 
       }
     );
 
 
-    commentButton.addEventListener(
-      "click",
-      function(){
+    body.appendChild(gallery);
 
-        post
-          .querySelector(
-            ".comments-area"
-          )
-          .classList
-          .toggle("open");
-
-      }
-    );
+  }
 
 
-    sendButton.addEventListener(
-      "click",
-      function(){
+  /* ACTIONS */
 
-        var form =
-          sendButton.closest(
-            ".comment-form"
-          );
+  var actions =
+    document.createElement("div");
 
-
-        var input =
-          form.querySelector(
-            ".comment-input"
-          );
+  actions.className =
+    "post-actions";
 
 
-        var text =
-          input.value.trim();
+  var like =
+    document.createElement("button");
+
+  like.type =
+    "button";
+
+  like.className =
+    "like-button";
+
+  like.innerHTML =
+    "♡ Подобається " +
+    "<span class=\"like-count\">" +
+    Number(data.likes || 0) +
+    "</span>";
 
 
-        if(!text){
-          return;
-        }
+  var comments =
+    document.createElement("button");
+
+  comments.type =
+    "button";
+
+  comments.className =
+    "comment-button";
+
+  comments.innerHTML =
+    "💬 Коментарі " +
+    "<span class=\"comment-count\">" +
+    (
+      Array.isArray(data.comments)
+      ? data.comments.length
+      : 0
+    ) +
+    "</span>";
 
 
-        var comment =
-          document.createElement(
-            "div"
-          );
+  actions.appendChild(like);
+  actions.appendChild(comments);
+
+  post.appendChild(actions);
 
 
-        comment.className =
+  /* COMMENTS */
+
+  var commentsArea =
+    document.createElement("div");
+
+  commentsArea.className =
+    "comments-area";
+
+
+  if(
+    Array.isArray(data.comments)
+  ){
+
+    data.comments.forEach(
+      function(comment){
+
+        var item =
+          document.createElement("div");
+
+        item.className =
           "fake-comment";
 
 
-        var name =
-          document.createElement(
-            "div"
-          );
+        var commentName =
+          document.createElement("div");
 
-
-        name.className =
+        commentName.className =
           "fake-comment-name";
 
+        commentName.textContent =
+          comment.name;
 
-        name.textContent =
-          "ти";
 
-
-        comment.appendChild(
-          name
+        item.appendChild(
+          commentName
         );
 
-
-        comment.appendChild(
+        item.appendChild(
           document.createTextNode(
-            text
+            comment.text
           )
         );
 
-
-        form.parentNode.insertBefore(
-          comment,
-          form
-        );
-
-
-        input.value="";
-
-
-        var count =
-          post.querySelector(
-            ".comment-count"
-          );
-
-
-        count.textContent =
-          parseInt(
-            count.textContent,
-            10
-          ) + 1;
+        commentsArea.appendChild(item);
 
       }
     );
@@ -1416,72 +764,195 @@ body{
   }
 
 
-  /* =====================================================
-     ПОКАЗ ПОСТІВ
-     ===================================================== */
+  /* COMMENT FORM */
 
-  var container =
-    document.getElementById(
-      "posts-container"
-    );
+  var form =
+    document.createElement("div");
 
-
-  var showMore =
-    document.getElementById(
-      "show-more"
-    );
+  form.className =
+    "comment-form";
 
 
-  function renderPosts(){
+  var input =
+    document.createElement("textarea");
 
-    container.innerHTML="";
+  input.className =
+    "comment-input";
 
-
-    posts.forEach(
-      function(post,index){
-
-        var element =
-          createPost(
-            post
-          );
+  input.placeholder =
+    "Написати коментар...";
 
 
-        if(
-          index >=
-          visiblePosts
-        ){
+  var send =
+    document.createElement("button");
 
-          element.style.display =
-            "none";
+  send.type =
+    "button";
 
-        }
+  send.className =
+    "comment-send";
+
+  send.textContent =
+    "Відправити";
 
 
-        container.appendChild(
-          element
+  form.appendChild(input);
+  form.appendChild(send);
+
+  commentsArea.appendChild(form);
+
+  post.appendChild(commentsArea);
+
+
+  /* DATE */
+
+  var date =
+    document.createElement("div");
+
+  date.className =
+    "profile-post-date";
+
+  date.textContent =
+    data.date || "щойно";
+
+  post.appendChild(date);
+
+
+  /* EVENTS */
+
+  like.addEventListener(
+    "click",
+    function(){
+
+      var count =
+        like.querySelector(
+          ".like-count"
+        );
+
+      var number =
+        parseInt(
+          count.textContent,
+          10
+        ) || 0;
+
+
+      if(
+        like.classList.contains("liked")
+      ){
+
+        number--;
+
+        like.classList.remove(
+          "liked"
+        );
+
+      }else{
+
+        number++;
+
+        like.classList.add(
+          "liked"
         );
 
       }
-    );
 
 
-    if(
-      visiblePosts >=
-      posts.length
-    ){
-
-      showMore.className =
-        "show-more hidden";
-
-    }else{
-
-      showMore.className =
-        "show-more";
+      like.innerHTML =
+        (
+          like.classList.contains("liked")
+          ? "♥"
+          : "♡"
+        ) +
+        " Подобається " +
+        "<span class=\"like-count\">" +
+        number +
+        "</span>";
 
     }
+  );
 
-  }
 
+  comments.addEventListener(
+    "click",
+    function(){
+
+      commentsArea.classList.toggle(
+        "open"
+      );
+
+    }
+  );
+
+
+  send.addEventListener(
+    "click",
+    function(){
+
+      var text =
+        input.value.trim();
+
+      if(!text){
+        return;
+      }
+
+
+      var comment =
+        document.createElement("div");
+
+      comment.className =
+        "user-comment";
+
+
+      var strong =
+        document.createElement("strong");
+
+      strong.textContent =
+        "ти: ";
+
+
+      comment.appendChild(
+        strong
+      );
+
+      comment.appendChild(
+        document.createTextNode(text)
+      );
+
+
+      commentsArea.insertBefore(
+        comment,
+        form
+      );
+
+
+      input.value = "";
+
+
+      var count =
+        comments.querySelector(
+          ".comment-count"
+        );
+
+      count.textContent =
+        parseInt(
+          count.textContent,
+          10
+        ) + 1;
+
+    }
+  );
+
+
+  return post;
+
+}
+
+
+/* =========================================================
+   ПОКАЗАТИ ЩЕ
+   ========================================================= */
+
+if(showMore){
 
   showMore.addEventListener(
     "click",
@@ -1490,35 +961,556 @@ body{
       visiblePosts +=
         postsPerClick;
 
-
-      if(
-        visiblePosts >
-        posts.length
-      ){
-
-        visiblePosts =
-          posts.length;
-
-      }
-
-
       renderPosts();
 
     }
   );
 
+}
 
-  renderPosts();
+
+/* =========================================================
+   НОВИЙ ДОПИС
+   ========================================================= */
+
+if(newPostLauncher){
+
+  newPostLauncher.addEventListener(
+    "click",
+    function(){
+
+      createPostBox.classList.toggle(
+        "collapsed"
+      );
+
+
+      if(
+        !createPostBox.classList.contains(
+          "collapsed"
+        )
+      ){
+
+        newPostTitle.focus();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   ПОМИЛКА
+   ========================================================= */
+
+function showError(text){
+
+  createPostError.textContent =
+    text || "";
+
+  createPostError.className =
+    text
+    ? "create-post-error open"
+    : "create-post-error";
+
+}
+
+
+/* =========================================================
+   ОБРАНІ ЗОБРАЖЕННЯ
+   ========================================================= */
+
+var selectedImages = [];
+
+var MAX_IMAGE_SIZE =
+  10 * 1024 * 1024;
+
+
+if(newPostImages){
+
+  newPostImages.addEventListener(
+    "change",
+    function(){
+
+      showError("");
+
+      Array.prototype.forEach.call(
+        newPostImages.files,
+        function(file){
+
+          if(
+            ![
+              "image/jpeg",
+              "image/png",
+              "image/gif",
+              "image/webp"
+            ].includes(file.type)
+          ){
+
+            showError(
+              "Дозволені JPG, PNG, GIF та WebP."
+            );
+
+            return;
+
+          }
+
+
+          if(
+            file.size >
+            MAX_IMAGE_SIZE
+          ){
+
+            showError(
+              "Максимальний розмір одного зображення — 10 МБ."
+            );
+
+            return;
+
+          }
+
+
+          selectedImages.push({
+            file:file,
+            url:URL.createObjectURL(file)
+          });
+
+        }
+      );
+
+
+      newPostImages.value = "";
+
+      renderImagePreviews();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   PREVIEWS
+   ========================================================= */
+
+function renderImagePreviews(){
+
+  newPostPreviews.innerHTML = "";
+
+
+  selectedImages.forEach(
+    function(item,index){
+
+      var frame =
+        document.createElement("div");
+
+      frame.className =
+        "create-post-preview-frame";
+
+
+      var image =
+        document.createElement("img");
+
+      image.className =
+        "create-post-preview-image";
+
+      image.src =
+        item.url;
+
+
+      var remove =
+        document.createElement("button");
+
+      remove.type =
+        "button";
+
+      remove.className =
+        "create-post-preview-remove";
+
+      remove.textContent =
+        "✕";
+
+
+      remove.addEventListener(
+        "click",
+        function(){
+
+          URL.revokeObjectURL(
+            item.url
+          );
+
+          selectedImages.splice(
+            index,
+            1
+          );
+
+          renderImagePreviews();
+
+        }
+      );
+
+
+      frame.appendChild(image);
+      frame.appendChild(remove);
+
+      newPostPreviews.appendChild(
+        frame
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   ОПУБЛІКУВАТИ
+   ========================================================= */
+
+if(publishPost){
+
+  publishPost.addEventListener(
+    "click",
+    function(){
+
+      var title =
+        newPostTitle.value.trim();
+
+      var text =
+        newPostText.value.trim();
+
+
+      showError("");
+
+
+      if(!title || !text){
+
+        showError(
+          "Заповни заголовок та текст допису."
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * Створюємо тільки RAM-об'єкт.
+       *
+       * Він НЕ записується нікуди.
+       */
+
+      var post = {
+
+        title:title,
+
+        text:text,
+
+        date:"щойно",
+
+        likes:0,
+
+        comments:[],
+
+        images:selectedImages.map(
+          function(item){
+            return item.url;
+          }
+        )
+
+      };
+
+
+      temporaryPosts.unshift(
+        post
+      );
+
+
+      /*
+       * Повертаємося на початок,
+       * щоб новий пост був видимий.
+       */
+
+      visiblePosts = 3;
+
+
+      renderPosts();
+
+
+      /* очищення форми */
+
+      newPostTitle.value = "";
+      newPostText.value = "";
+
+      selectedImages.forEach(
+        function(item){
+
+          URL.revokeObjectURL(
+            item.url
+          );
+
+        }
+      );
+
+      selectedImages = [];
+
+      newPostPreviews.innerHTML = "";
+
+      createPostBox.classList.add(
+        "collapsed"
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   СКАСУВАТИ
+   ========================================================= */
+
+if(cancelNewPost){
+
+  cancelNewPost.addEventListener(
+    "click",
+    function(){
+
+      newPostTitle.value = "";
+      newPostText.value = "";
+
+      selectedImages.forEach(
+        function(item){
+
+          URL.revokeObjectURL(
+            item.url
+          );
+
+        }
+      );
+
+      selectedImages = [];
+
+      newPostPreviews.innerHTML = "";
+
+      showError("");
+
+      createPostBox.classList.add(
+        "collapsed"
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   IMAGE VIEWER
+   ========================================================= */
+
+var viewer =
+  document.getElementById(
+    "post-image-viewer"
+  );
+
+var viewerImage =
+  document.getElementById(
+    "post-image-viewer-image"
+  );
+
+var viewerPrev =
+  document.getElementById(
+    "post-image-viewer-prev"
+  );
+
+var viewerNext =
+  document.getElementById(
+    "post-image-viewer-next"
+  );
+
+var viewerClose =
+  document.getElementById(
+    "post-image-viewer-close"
+  );
+
+var viewerImages = [];
+
+var viewerIndex = 0;
+
+
+function openImageViewer(
+  images,
+  index
+){
+
+  viewerImages =
+    images.slice();
+
+  viewerIndex =
+    index || 0;
+
+  viewerImage.src =
+    viewerImages[viewerIndex];
+
+  viewer.className =
+    "image-viewer open";
+
+
+  viewerPrev.style.display =
+    viewerImages.length > 1
+    ? "block"
+    : "none";
+
+
+  viewerNext.style.display =
+    viewerImages.length > 1
+    ? "block"
+    : "none";
+
+}
+
+
+function closeImageViewer(){
+
+  viewer.className =
+    "image-viewer";
+
+  viewerImage.removeAttribute(
+    "src"
+  );
+
+  viewerImages = [];
+
+}
+
+
+if(viewerClose){
+
+  viewerClose.addEventListener(
+    "click",
+    closeImageViewer
+  );
+
+}
+
+
+if(viewerPrev){
+
+  viewerPrev.addEventListener(
+    "click",
+    function(){
+
+      if(viewerImages.length < 2){
+        return;
+      }
+
+      viewerIndex =
+        (
+          viewerIndex -
+          1 +
+          viewerImages.length
+        ) %
+        viewerImages.length;
+
+      viewerImage.src =
+        viewerImages[viewerIndex];
+
+    }
+  );
+
+}
+
+
+if(viewerNext){
+
+  viewerNext.addEventListener(
+    "click",
+    function(){
+
+      if(viewerImages.length < 2){
+        return;
+      }
+
+      viewerIndex =
+        (
+          viewerIndex +
+          1
+        ) %
+        viewerImages.length;
+
+      viewerImage.src =
+        viewerImages[viewerIndex];
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   СТАТИСТИКА
+   ========================================================= */
+
+function safeNumber(base,range){
+
+  return base +
+    Math.floor(
+      Math.random() * range
+    );
+
+}
+
+
+function updateStatistics(){
+
+  document.getElementById(
+    "registered-hoomen"
+  ).textContent =
+    safeNumber(
+      8000000,
+      47001
+    ).toLocaleString("uk-UA");
+
+
+  document.getElementById(
+    "online-hoomen"
+  ).textContent =
+    safeNumber(
+      1000000,
+      76001
+    ).toLocaleString("uk-UA");
+
+
+  document.getElementById(
+    "today-hoomen"
+  ).textContent =
+    safeNumber(
+      2400000,
+      180001
+    ).toLocaleString("uk-UA");
+
+}
+
+
+/* =========================================================
+   ЗАПУСК
+   ========================================================= */
+
+renderPosts();
+
+updateStatistics();
+
+setInterval(
+  updateStatistics,
+  30000
+);
+
 
 })();
 
 </script>
 
-
 </body>
-
-</html>
-
-</body>
-
 </html>
