@@ -6,37 +6,1518 @@
 <meta charset="utf-8">
 
 <meta
-name="viewport"
-content="width=device-width,initial-scale=1"
+  name="viewport"
+  content="width=device-width,initial-scale=1"
 >
 
-<script>
+<title>Арчат — copy_pasta</title>
 
-window.PROFILE_FILE="../data/copy_pasta.js";
 
-</script>
+<style>
 
-<script>
+html,
+body{
+  margin:0;
+  padding:0;
 
-fetch("../profile.html")
-.then(function(response){
-    return response.text();
-})
-.then(function(html){
+  background:#fff;
 
-    document.open();
-    document.write(html);
-    document.close();
+  font-family:Arial,Helvetica,sans-serif;
 
-});
+  font-size:12px;
+  line-height:14px;
 
-</script>
+  color:#222;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+#archat-site{
+  width:100%;
+  min-height:100vh;
+
+  padding:12px;
+
+  background:#fff;
+
+  border:1px solid #777;
+}
+
+#archat-site a{
+  color:#444;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.archat-header{
+
+  margin:0 0 10px;
+
+  padding:5px 8px;
+
+  background:
+    linear-gradient(#626262,#3b3b3b);
+
+  border:1px solid #222;
+
+  color:#fff;
+
+  font-weight:bold;
+
+  letter-spacing:1px;
+
+  text-transform:uppercase;
+}
+
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+
+.site-layout{
+
+  display:table;
+
+  width:100%;
+
+  border-collapse:separate;
+
+  border-spacing:10px 0;
+}
+
+.site-left{
+
+  display:table-cell;
+
+  width:165px;
+
+  vertical-align:top;
+}
+
+.site-right{
+
+  display:table-cell;
+
+  vertical-align:top;
+}
+
+
+/* =========================================================
+   LEFT
+   ========================================================= */
+
+.left-box{
+
+  padding:3px 7px;
+
+  background:#f0f0f0;
+
+  border:1px solid #999;
+}
+
+.site-name{
+
+  margin:1px 0 6px;
+
+  padding:0 0 4px;
+
+  border-bottom:1px solid #bcbcbc;
+
+  color:#111;
+
+  font-size:15px;
+
+  line-height:17px;
+
+  font-weight:bold;
+
+  text-align:center;
+
+  word-break:break-word;
+}
+
+.main-avatar{
+
+  display:block;
+
+  width:100%;
+
+  height:228px;
+
+  margin:0 0 6px;
+
+  object-fit:cover;
+
+  background:#ddd;
+
+  border:1px solid #888;
+}
+
+.archat-button{
+
+  display:block;
+
+  width:100%;
+
+  margin:0 0 5px;
+
+  padding:4px 0;
+
+  background:
+    linear-gradient(#fff176,#fbc02d);
+
+  border:1px solid #a78119;
+
+  color:#000 !important;
+
+  font-size:10px;
+
+  line-height:13px;
+
+  font-weight:bold;
+
+  text-align:center;
+
+  text-decoration:none;
+
+  text-transform:uppercase;
+}
+
+.archat-button:hover{
+
+  background:
+    linear-gradient(#fff59d,#fdd835);
+}
+
+.nav-menu{
+
+  border-top:1px solid #999;
+}
+
+.nav-item{
+
+  display:block;
+
+  width:100%;
+
+  padding:3px 2px;
+
+  border-bottom:1px solid #c7c7c7;
+
+  color:#444;
+
+  font-size:11px;
+
+  line-height:13px;
+
+  text-decoration:underline;
+}
+
+.nav-item:hover{
+
+  background:#e2e2e2;
+
+  color:#000;
+
+  text-decoration:none;
+}
+
+.account-box{
+
+  margin:8px 0 0;
+
+  padding:5px 4px;
+
+  border-top:1px solid #999;
+
+  text-align:center;
+}
+
+.account-text{
+
+  margin:0 0 5px;
+
+  color:#555;
+
+  font-size:9px;
+
+  line-height:12px;
+}
+
+.account-link{
+
+  display:block;
+
+  margin:2px 0;
+
+  color:#444;
+
+  font-size:10px;
+
+  line-height:12px;
+
+  font-weight:bold;
+
+  text-decoration:underline;
+}
+
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+
+.profile-box{
+
+  margin:0 0 8px;
+
+  padding:7px;
+
+  background:#fff;
+
+  border:1px solid #aaa;
+}
+
+.profile-header{
+
+  margin:0 0 7px;
+
+  padding:5px 7px;
+
+  background:#f0f0f0;
+
+  border:1px solid #999;
+
+  font-weight:bold;
+}
+
+.profile-info{
+
+  padding:6px 7px;
+
+  background:#f9f9f9;
+
+  border:1px solid #aaa;
+
+  font-size:11px;
+
+  line-height:15px;
+}
+
+.profile-status{
+
+  margin-top:4px;
+
+  color:#2e7d32;
+
+  font-size:10px;
+
+  line-height:12px;
+
+  font-style:italic;
+}
+
+
+/* =========================================================
+   POSTS
+   ========================================================= */
+
+.posts-header{
+
+  margin:8px 0 5px;
+
+  padding:4px 7px;
+
+  background:#f0f0f0;
+
+  border:1px solid #999;
+
+  font-weight:bold;
+}
+
+.profile-post{
+
+  margin:0 0 7px;
+
+  background:#fff;
+
+  border:1px solid #aaa;
+}
+
+.profile-post-title{
+
+  padding:4px 7px;
+
+  background:#f5f5f5;
+
+  border-bottom:1px solid #aaa;
+
+  font-weight:bold;
+}
+
+.profile-post-body{
+
+  padding:6px 7px;
+
+  color:#333;
+
+  font-size:11px;
+
+  line-height:15px;
+}
+
+.profile-post-date{
+
+  padding:3px 7px;
+
+  border-top:1px solid #ddd;
+
+  color:#888;
+
+  font-size:9px;
+
+  line-height:11px;
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.post-actions{
+
+  padding:4px 7px;
+
+  border-top:1px solid #ddd;
+
+  background:#fafafa;
+}
+
+.like-button,
+.comment-button{
+
+  display:inline-block;
+
+  margin-right:8px;
+
+  padding:1px 3px;
+
+  border:0;
+
+  background:transparent;
+
+  color:#555;
+
+  font-family:Arial,Helvetica,sans-serif;
+
+  font-size:10px;
+
+  line-height:13px;
+
+  cursor:pointer;
+}
+
+.like-button:hover,
+.comment-button:hover{
+
+  color:#000;
+
+  text-decoration:underline;
+}
+
+.like-button.liked{
+
+  color:#c62828;
+
+  font-weight:bold;
+}
+
+
+/* =========================================================
+   COMMENTS
+   ========================================================= */
+
+.comments-area{
+
+  display:none;
+
+  padding:6px 7px;
+
+  background:#f8f8f8;
+
+  border-top:1px solid #ddd;
+}
+
+.comments-area.open{
+
+  display:block;
+}
+
+.fake-comment{
+
+  margin:0 0 5px;
+
+  padding:4px 5px;
+
+  background:#fff;
+
+  border:1px solid #ccc;
+
+  font-size:10px;
+
+  line-height:13px;
+}
+
+.fake-comment-name{
+
+  margin-bottom:2px;
+
+  color:#222;
+
+  font-weight:bold;
+}
+
+.comment-form{
+
+  margin-top:6px;
+}
+
+.comment-input{
+
+  display:block;
+
+  width:100%;
+
+  min-height:45px;
+
+  padding:4px 5px;
+
+  resize:vertical;
+
+  background:#fff;
+
+  border:1px solid #aaa;
+
+  color:#222;
+
+  font-family:Arial,Helvetica,sans-serif;
+
+  font-size:10px;
+
+  line-height:13px;
+}
+
+.comment-send{
+
+  margin-top:4px;
+
+  padding:3px 8px;
+
+  background:#eee;
+
+  border:1px solid #999;
+
+  color:#444;
+
+  font-size:10px;
+
+  line-height:12px;
+
+  cursor:pointer;
+}
+
+
+/* =========================================================
+   SHOW MORE
+   ========================================================= */
+
+.show-more{
+
+  display:block;
+
+  width:100%;
+
+  margin:2px 0;
+
+  padding:5px 7px;
+
+  background:#f0f0f0;
+
+  border:1px solid #999;
+
+  color:#444;
+
+  font-size:10px;
+
+  line-height:13px;
+
+  font-weight:bold;
+
+  text-align:center;
+
+  text-decoration:underline;
+
+  cursor:pointer;
+}
+
+.show-more.hidden{
+
+  display:none;
+}
+
+
+/* =========================================================
+   RULES
+   ========================================================= */
+
+.rules-box{
+
+  margin:8px 0 0;
+
+  padding:5px 8px;
+
+  background:#fff;
+
+  border:1px solid #aaa;
+
+  color:#444;
+
+  font-size:11px;
+
+  line-height:14px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.footer-line{
+
+  margin-top:7px;
+
+  padding-top:4px;
+
+  border-top:1px solid #ccc;
+
+  color:#888;
+
+  font-size:9px;
+
+  line-height:11px;
+
+  text-align:center;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media(max-width:600px){
+
+  .site-layout{
+
+    display:block;
+  }
+
+  .site-left,
+  .site-right{
+
+    display:block;
+
+    width:100%;
+  }
+
+  .site-left{
+
+    margin-bottom:8px;
+  }
+
+  #archat-site{
+
+    padding:7px;
+  }
+
+}
+
+</style>
 
 </head>
 
+
 <body>
 
-Завантаження профілю...
+
+<div id="archat-site">
+
+
+<div class="archat-header">
+АРЧАТ
+</div>
+
+
+<div class="site-layout">
+
+
+<!-- =====================================================
+     LEFT
+     ===================================================== -->
+
+<div class="site-left">
+
+<div class="left-box">
+
+
+<div
+  class="site-name"
+  id="side-nickname"
+>
+</div>
+
+
+<img
+  class="main-avatar"
+  id="side-avatar"
+  src=""
+  alt=""
+>
+
+
+<a
+  class="archat-button"
+  href="../index.html"
+>
+🏠 АРЧАТ
+</a>
+
+
+<div class="nav-menu">
+
+
+<a
+  class="nav-item"
+  href="../index.html"
+>
+Головна
+</a>
+
+
+<a
+  class="nav-item"
+  href="../profiles.html"
+>
+Профілі
+</a>
+
+
+<a
+  class="nav-item"
+  href="#"
+>
+Стрічка
+</a>
+
+
+<a
+  class="nav-item"
+  href="#"
+>
+Чати
+</a>
+
+
+<a
+  class="nav-item"
+  href="#"
+>
+Острови
+</a>
+
+
+<a
+  class="nav-item"
+  href="#"
+>
+Правила
+</a>
+
+
+</div>
+
+
+<div class="account-box">
+
+
+<div class="account-text">
+Немає акаунта?
+</div>
+
+
+<a
+  class="account-link"
+  href="#"
+>
+ЗАРЕЄСТРУВАТИСЯ
+</a>
+
+
+<a
+  class="account-link"
+  href="#"
+>
+ВХІД
+</a>
+
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     RIGHT
+     ===================================================== -->
+
+<div class="site-right">
+
+
+<div class="profile-box">
+
+
+<div
+  class="profile-header"
+  id="profile-header"
+>
+</div>
+
+
+<div class="profile-info">
+
+
+<strong
+  id="profile-nickname"
+>
+</strong>
+
+
+<div id="profile-family">
+</div>
+
+
+<div id="profile-description">
+</div>
+
+
+<div
+  class="profile-status"
+  id="profile-status"
+>
+</div>
+
+
+</div>
+
+</div>
+
+
+<div
+  class="posts-header"
+  id="posts-header"
+>
+</div>
+
+
+<div id="posts-container">
+</div>
+
+
+<button
+  class="show-more"
+  id="show-more"
+  type="button"
+>
+показати ще...
+</button>
+
+
+<div class="rules-box">
+
+Пам'ятай та дотримуйся
+<a href="../rules.html">
+ПРАВИЛ
+</a>
+нашого ресурсу.
+
+</div>
+
+
+<div class="footer-line">
+Арчат — місце для вигаданих акаунтів.
+</div>
+
+
+</div>
+
+</div>
+
+</div>
+
+
+<script src="copy_pasta.js"></script>
+
+
+<script>
+
+(function(){
+
+  var profile =
+    COPY_PASTA_PROFILE;
+
+
+  var posts =
+    profile.posts || [];
+
+
+  var visiblePosts = 3;
+
+  var postsPerClick = 5;
+
+
+  /* =====================================================
+     ОСНОВНА ІНФОРМАЦІЯ
+     ===================================================== */
+
+
+  document.title =
+    "Арчат — " +
+    profile.nickname;
+
+
+  document.getElementById(
+    "side-nickname"
+  ).textContent =
+    profile.nickname;
+
+
+  document.getElementById(
+    "side-avatar"
+  ).src =
+    profile.avatar;
+
+
+  document.getElementById(
+    "side-avatar"
+  ).alt =
+    profile.nickname;
+
+
+  document.getElementById(
+    "profile-header"
+  ).textContent =
+    "Мій аргайл: " +
+    profile.nickname;
+
+
+  document.getElementById(
+    "profile-nickname"
+  ).textContent =
+    profile.nickname;
+
+
+  document.getElementById(
+    "profile-description"
+  ).textContent =
+    "Статус: " +
+    profile.description;
+
+
+  document.getElementById(
+    "profile-status"
+  ).textContent =
+    profile.statusText;
+
+
+  /* =====================================================
+     СІМЕЙКА
+     ===================================================== */
+
+  var family =
+    document.getElementById(
+      "profile-family"
+    );
+
+
+  if(profile.family){
+
+    family.innerHTML =
+      "Сімейка: <b>" +
+      '<a href="' +
+      profile.familyUrl +
+      '">' +
+      profile.family +
+      '</a>' +
+      "</b>";
+
+  }
+
+
+  /* =====================================================
+     ЗАГОЛОВОК ПОСТІВ
+     ===================================================== */
+
+  document.getElementById(
+    "posts-header"
+  ).textContent =
+    "Дописи " +
+    profile.nickname +
+    " — " +
+    Number(
+      profile.postsCount ||
+      posts.length
+    ).toLocaleString(
+      "uk-UA"
+    );
+
+
+  /* =====================================================
+     СТВОРЕННЯ ПОСТУ
+     ===================================================== */
+
+  function createPost(
+    post
+  ){
+
+    var element =
+      document.createElement(
+        "div"
+      );
+
+
+    element.className =
+      "profile-post";
+
+
+    /* TITLE */
+
+    var title =
+      document.createElement(
+        "div"
+      );
+
+    title.className =
+      "profile-post-title";
+
+    title.textContent =
+      post.title || "";
+
+
+    /* BODY */
+
+    var body =
+      document.createElement(
+        "div"
+      );
+
+    body.className =
+      "profile-post-body";
+
+    body.textContent =
+      post.text || "";
+
+
+    /* ACTIONS */
+
+    var actions =
+      document.createElement(
+        "div"
+      );
+
+    actions.className =
+      "post-actions";
+
+
+    actions.innerHTML =
+
+      '<button class="like-button" type="button">' +
+
+      '♡ Подобається ' +
+
+      '<span class="like-count">' +
+
+      Number(
+        post.likes || 0
+      ).toLocaleString(
+        "uk-UA"
+      ) +
+
+      '</span>' +
+
+      '</button>' +
+
+
+      '<button class="comment-button" type="button">' +
+
+      '💬 Коментарі ' +
+
+      '<span class="comment-count">' +
+
+      (
+        post.comments
+        ?
+        post.comments.length
+        :
+        0
+      ) +
+
+      '</span>' +
+
+      '</button>';
+
+
+    /* COMMENTS */
+
+    var commentsArea =
+      document.createElement(
+        "div"
+      );
+
+    commentsArea.className =
+      "comments-area";
+
+
+    if(post.comments){
+
+      post.comments.forEach(
+        function(comment){
+
+          var fake =
+            document.createElement(
+              "div"
+            );
+
+          fake.className =
+            "fake-comment";
+
+
+          var name =
+            document.createElement(
+              "div"
+            );
+
+          name.className =
+            "fake-comment-name";
+
+          name.textContent =
+            comment.name;
+
+
+          fake.appendChild(
+            name
+          );
+
+
+          fake.appendChild(
+            document.createTextNode(
+              comment.text
+            )
+          );
+
+
+          commentsArea.appendChild(
+            fake
+          );
+
+        }
+      );
+
+    }
+
+
+    /* COMMENT FORM */
+
+    var form =
+      document.createElement(
+        "div"
+      );
+
+    form.className =
+      "comment-form";
+
+
+    form.innerHTML =
+
+      '<textarea class="comment-input" ' +
+
+      'placeholder="Написати коментар...">' +
+
+      '</textarea>' +
+
+
+      '<button class="comment-send" type="button">' +
+
+      'Відправити' +
+
+      '</button>';
+
+
+    commentsArea.appendChild(
+      form
+    );
+
+
+    /* DATE */
+
+    var date =
+      document.createElement(
+        "div"
+      );
+
+    date.className =
+      "profile-post-date";
+
+    date.textContent =
+      post.date || "";
+
+
+    /* APPEND */
+
+    element.appendChild(
+      title
+    );
+
+    element.appendChild(
+      body
+    );
+
+    element.appendChild(
+      actions
+    );
+
+    element.appendChild(
+      commentsArea
+    );
+
+    element.appendChild(
+      date
+    );
+
+
+    bindPostEvents(
+      element
+    );
+
+
+    return element;
+
+  }
+
+
+  /* =====================================================
+     EVENTS
+     ===================================================== */
+
+  function bindPostEvents(
+    post
+  ){
+
+    var likeButton =
+      post.querySelector(
+        ".like-button"
+      );
+
+
+    var commentButton =
+      post.querySelector(
+        ".comment-button"
+      );
+
+
+    var sendButton =
+      post.querySelector(
+        ".comment-send"
+      );
+
+
+    likeButton.addEventListener(
+      "click",
+      function(){
+
+        var count =
+          likeButton.querySelector(
+            ".like-count"
+          );
+
+
+        var number =
+          parseInt(
+            count.textContent
+              .replace(/\s/g,""),
+            10
+          );
+
+
+        if(
+          likeButton.classList
+            .contains("liked")
+        ){
+
+          number--;
+
+          likeButton.classList
+            .remove("liked");
+
+
+          likeButton.innerHTML =
+
+            "♡ Подобається " +
+
+            '<span class="like-count">' +
+
+            number.toLocaleString(
+              "uk-UA"
+            ) +
+
+            "</span>";
+
+        }else{
+
+          number++;
+
+          likeButton.classList
+            .add("liked");
+
+
+          likeButton.innerHTML =
+
+            "♥ Подобається " +
+
+            '<span class="like-count">' +
+
+            number.toLocaleString(
+              "uk-UA"
+            ) +
+
+            "</span>";
+
+        }
+
+      }
+    );
+
+
+    commentButton.addEventListener(
+      "click",
+      function(){
+
+        post
+          .querySelector(
+            ".comments-area"
+          )
+          .classList
+          .toggle("open");
+
+      }
+    );
+
+
+    sendButton.addEventListener(
+      "click",
+      function(){
+
+        var form =
+          sendButton.closest(
+            ".comment-form"
+          );
+
+
+        var input =
+          form.querySelector(
+            ".comment-input"
+          );
+
+
+        var text =
+          input.value.trim();
+
+
+        if(!text){
+          return;
+        }
+
+
+        var comment =
+          document.createElement(
+            "div"
+          );
+
+
+        comment.className =
+          "fake-comment";
+
+
+        var name =
+          document.createElement(
+            "div"
+          );
+
+
+        name.className =
+          "fake-comment-name";
+
+
+        name.textContent =
+          "ти";
+
+
+        comment.appendChild(
+          name
+        );
+
+
+        comment.appendChild(
+          document.createTextNode(
+            text
+          )
+        );
+
+
+        form.parentNode.insertBefore(
+          comment,
+          form
+        );
+
+
+        input.value="";
+
+
+        var count =
+          post.querySelector(
+            ".comment-count"
+          );
+
+
+        count.textContent =
+          parseInt(
+            count.textContent,
+            10
+          ) + 1;
+
+      }
+    );
+
+  }
+
+
+  /* =====================================================
+     ПОКАЗ ПОСТІВ
+     ===================================================== */
+
+  var container =
+    document.getElementById(
+      "posts-container"
+    );
+
+
+  var showMore =
+    document.getElementById(
+      "show-more"
+    );
+
+
+  function renderPosts(){
+
+    container.innerHTML="";
+
+
+    posts.forEach(
+      function(post,index){
+
+        var element =
+          createPost(
+            post
+          );
+
+
+        if(
+          index >=
+          visiblePosts
+        ){
+
+          element.style.display =
+            "none";
+
+        }
+
+
+        container.appendChild(
+          element
+        );
+
+      }
+    );
+
+
+    if(
+      visiblePosts >=
+      posts.length
+    ){
+
+      showMore.className =
+        "show-more hidden";
+
+    }else{
+
+      showMore.className =
+        "show-more";
+
+    }
+
+  }
+
+
+  showMore.addEventListener(
+    "click",
+    function(){
+
+      visiblePosts +=
+        postsPerClick;
+
+
+      if(
+        visiblePosts >
+        posts.length
+      ){
+
+        visiblePosts =
+          posts.length;
+
+      }
+
+
+      renderPosts();
+
+    }
+  );
+
+
+  renderPosts();
+
+})();
+
+</script>
+
+
+</body>
+
+</html>
 
 </body>
 
