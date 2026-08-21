@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="uk">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+name="viewport"
+content="width=device-width,initial-scale=1"
+>
+
+<title>Гуменчат</title>
+
+<link
+rel="stylesheet"
+href="css/profile.css"
+>
+
+</head>
+
+<body>
+
+<div id="hoomenchat-site">
+
+<div class="hoomenchat-header">
+ГУМЕНЧАТ
+</div>
+
+<div class="site-layout">
+
+<div class="site-left">
+
+<div class="left-box">
+
+<div
+class="site-name"
+id="profile-username"
+>
+</div>
+
+<img
+class="main-avatar"
+id="profile-avatar"
+src=""
+alt=""
+>
+
+<a
+class="archat-button"
+href="../index.html"
+>
+📩 АРЧАТ
+</a>
+
+<div class="nav-menu">
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Головна
+</a>
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Гумени
+</a>
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Друмени
+</a>
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Стрічерчат
+</a>
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Острови
+</a>
+
+<a
+class="nav-item"
+href="../index.html"
+>
+Правила
+</a>
+
+</div>
+
+<div class="account-box">
+
+<div class="account-text">
+Немає гумгайла?
+</div>
+
+<a
+class="account-link"
+href="#"
+>
+ЗАРЕЄСТРУВАТИСЯ
+</a>
+
+<a
+class="account-link"
+href="#"
+>
+ВХІД
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="site-right">
+
+<div class="profile-box">
+
+<div
+class="profile-header"
+id="profile-header"
+>
+</div>
+
+<div class="profile-info">
+
+<strong id="profile-name"></strong>
+
+<div
+id="profile-family"
+>
+</div>
+
+<div>
+Статус:
+<span id="profile-description"></span>
+</div>
+
+<div
+class="profile-status"
+id="profile-status"
+>
+</div>
+
+</div>
+
+</div>
+
+
+<div
+class="posts-header"
+id="posts-header"
+>
+Дописи
+</div>
+
+
+<button
+class="create-post-launcher"
+id="new-post-launcher"
+type="button"
+>
+＋ Новий допис
+</button>
+
+
+<div
+class="create-post-box collapsed"
+id="create-post-box"
+>
+
+<div class="create-post-title">
+Створити допис
+</div>
+
+<input
+class="create-post-input"
+id="new-post-title"
+type="text"
+maxlength="200"
+placeholder="Заголовок допису..."
+>
+
+<textarea
+class="create-post-input create-post-text"
+id="new-post-text"
+placeholder="Текст допису..."
+></textarea>
+
+<div class="create-post-actions">
+
+<button
+class="create-post-button"
+id="publish-post"
+type="button"
+>
+Опублікувати
+</button>
+
+<button
+class="create-post-button"
+id="cancel-new-post"
+type="button"
+>
+Скасувати
+</button>
+
+</div>
+
+<div
+class="create-post-error"
+id="create-post-error"
+></div>
+
+</div>
+
+
+<div id="profile-posts"></div>
+
+
+<button
+class="show-more hidden"
+id="show-more-posts"
+type="button"
+>
+показати ще...
+</button>
+
+
+<div class="rules-box">
+
+Пам'ятай та дотримуйся
+
+<a href="../index.html">
+ПРАВИЛ
+</a>
+
+нашого ресурсу для приємного та друмнього часу разом з нами.
+
+</div>
+
+
+<div class="statistics-box">
+
+<div class="statistics-title">
+Статистика Гуменчату
+</div>
+
+<div>
+Зареєстровано гуменів:
+<span
+class="statistics-number"
+id="registered-hoomen"
+>
+</span>
+</div>
+
+<div>
+Зараз онлайн:
+<span
+class="statistics-online"
+id="online-hoomen"
+>
+</span>
+</div>
+
+<div>
+Гуменів сьогодні завітало:
+<span
+class="statistics-number"
+id="today-hoomen"
+>
+</span>
+</div>
+
+</div>
+
+
+<div
+class="image-viewer"
+id="image-viewer"
+>
+
+<button
+class="image-viewer-close"
+id="viewer-close"
+type="button"
+>
+✕
+</button>
+
+<button
+class="image-viewer-prev"
+id="viewer-prev"
+type="button"
+>
+‹
+</button>
+
+<img
+class="image-viewer-image"
+id="viewer-image"
+src=""
+alt=""
+>
+
+<button
+class="image-viewer-next"
+id="viewer-next"
+type="button"
+>
+›
+</button>
+
+</div>
+
+
+<div class="footer-line">
+Гуменчат — місце для гуменів.
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+(function(){
+
+var script=document.createElement("script");
+
+script.src="../js/profile.js";
+
+document.body.appendChild(script);
+
+})();
+
+</script>
+
+</body>
+
+</html>
