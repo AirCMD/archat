@@ -98,57 +98,73 @@ class SmallLLM {
 
     async _loadTokenizer() {
 
-        const TokenizerClass =
-            window.Tokenizer ||
-            window.GPT2Tokenizer ||
-            window.ByteLevelTokenizer;
+    const TokenizerClass =
+        window.SmolTokenizer ||
+        window.Tokenizer ||
+        window.GPT2Tokenizer ||
+        window.ByteLevelTokenizer;
 
-        if (!TokenizerClass) {
+    if (!TokenizerClass) {
 
-            console.warn(
-                "[AI] Tokenizer class не знайдений."
-            );
-
-            this.tokenizer = null;
-
-            return;
-        }
-
-
-        try {
-
-            const response =
-                await fetch(
-                    SMALL_LLM_TOKENIZER_URL
-                );
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `Tokenizer HTTP ${response.status}`
-                );
-            }
-
-            const data =
-                await response.json();
-
-            this.tokenizer =
-                new TokenizerClass(data);
-
-            console.log(
-                "[AI] Tokenizer завантажений."
-            );
-
-        } catch (error) {
-
-            console.warn(
-                "[AI] Tokenizer не завантажився:",
-                error
-            );
-
-            this.tokenizer = null;
-        }
+        throw new Error(
+            "Клас токенізатора не знайдений. Очікується window.SmolTokenizer."
+        );
     }
+
+
+    console.log(
+        "[AI] Tokenizer class:",
+        TokenizerClass.name
+    );
+
+
+    try {
+
+        /*
+         * SmolTokenizer сам завантажує tokenizer.json
+         * через свій метод load().
+         *
+         * Тому не передаємо data у constructor.
+         */
+
+        this.tokenizer =
+            new TokenizerClass();
+
+
+        if (
+            typeof this.tokenizer.load ===
+            "function"
+        ) {
+
+            await this.tokenizer.load();
+
+        } else {
+
+            throw new Error(
+                "У токенізатора немає методу load()."
+            );
+        }
+
+
+        console.log(
+            "[AI] Tokenizer завантажений."
+        );
+
+        console.log(
+            "[AI] Tokenizer готовий:",
+            this.tokenizer.loaded
+        );
+
+
+    } catch (error) {
+
+        this.tokenizer = null;
+
+        throw new Error(
+            `Tokenizer не завантажився: ${error.message}`
+        );
+    }
+}
 
 
     async _loadONNX() {
