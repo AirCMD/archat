@@ -48,9 +48,12 @@ class SmallLLM {
             this.ready = true;
 
             console.log("[AI] SmallLLM завантажений.");
+
             console.log(
                 "[AI] Forward:",
-                this.forwardReady ? "готовий" : "не готовий"
+                this.forwardReady
+                    ? "готовий"
+                    : "не готовий"
             );
 
             return true;
@@ -72,7 +75,9 @@ class SmallLLM {
     async _loadConfig() {
 
         const response =
-            await fetch(SMALL_LLM_CONFIG_URL);
+            await fetch(
+                SMALL_LLM_CONFIG_URL
+            );
 
         if (!response.ok) {
 
@@ -109,10 +114,13 @@ class SmallLLM {
             return;
         }
 
+
         try {
 
             const response =
-                await fetch(SMALL_LLM_TOKENIZER_URL);
+                await fetch(
+                    SMALL_LLM_TOKENIZER_URL
+                );
 
             if (!response.ok) {
 
@@ -172,7 +180,8 @@ class SmallLLM {
 
     _inspectArchitecture() {
 
-        const c = this.config || {};
+        const c =
+            this.config || {};
 
         console.log(
             "[AI] Архітектура SmolLM2"
@@ -236,7 +245,7 @@ class SmallLLM {
             } catch (error) {
 
                 console.warn(
-                    "[AI] Не вдалося отримати operator counts:",
+                    "[AI] Operator counts error:",
                     error
                 );
             }
@@ -247,12 +256,12 @@ class SmallLLM {
 
             try {
 
-                const q =
+                const list =
                     this.model.inspectMatMulNBits();
 
                 console.log(
                     "[AI] MatMulNBits:",
-                    q
+                    list
                 );
 
             } catch (error) {
@@ -266,50 +275,77 @@ class SmallLLM {
     }
 
 
-    _getAttribute(node, name, fallback = null) {
+    _getAttribute(
+        node,
+        name,
+        fallback = null
+    ) {
 
-        if (!node || !node.attributes) {
+        if (
+            !node ||
+            !node.attributes
+        ) {
+
             return fallback;
         }
+
 
         const attr =
             node.attributes.find(
                 a => a.name === name
             );
 
+
         if (!attr) {
+
             return fallback;
         }
 
-        if (attr.i !== undefined) {
-            return Number(attr.i);
+
+        if (
+            attr.i !== undefined
+        ) {
+
+            return Number(
+                attr.i
+            );
         }
 
-        if (attr.f !== undefined) {
-            return Number(attr.f);
+
+        if (
+            attr.f !== undefined
+        ) {
+
+            return Number(
+                attr.f
+            );
         }
 
-        if (attr.s !== undefined) {
+
+        if (
+            attr.s !== undefined
+        ) {
+
             return attr.s;
         }
+
 
         return fallback;
     }
 
 
     /*
-     * ВАЖЛИВА ВИПРАВЛЕНА ФУНКЦІЯ
+     * Читає TensorProto.rawData.
      *
-     * ONNX rawData може бути Uint8Array
-     * з byteOffset, який не кратний 2 або 4.
-     *
-     * Тому спочатку створюємо НОВИЙ
-     * вирівняний Uint8Array, а вже потім
-     * читаємо Float32 / Float16 / Uint16.
+     * Головний захист:
+     * створюємо новий Uint8Array,
+     * тому byteOffset завжди 0.
      */
+
     _readRawTensor(tensor) {
 
         if (!tensor) {
+
             return null;
         }
 
@@ -329,25 +365,41 @@ class SmallLLM {
             bytes.set(source);
 
 
-            switch (tensor.dataType) {
+            console.log(
+                "[AI] Reading tensor:",
+                {
+                    dataType:
+                        tensor.dataType,
+
+                    dims:
+                        tensor.dims,
+
+                    bytes:
+                        bytes.byteLength
+                }
+            );
+
+
+            switch (
+                tensor.dataType
+            ) {
 
 
                 // FLOAT
-                case 1: {
+                case 1:
 
                     if (
                         bytes.byteLength % 4 !== 0
                     ) {
 
                         throw new Error(
-                            `FLOAT tensor має неправильний розмір: ${bytes.byteLength}`
+                            "FLOAT tensor має неправильний розмір"
                         );
                     }
 
                     return new Float32Array(
                         bytes.buffer
                     );
-                }
 
 
                 // UINT8
@@ -367,45 +419,43 @@ class SmallLLM {
 
 
                 // UINT16
-                case 4: {
+                case 4:
 
                     if (
                         bytes.byteLength % 2 !== 0
                     ) {
 
                         throw new Error(
-                            `UINT16 tensor має непарний розмір: ${bytes.byteLength}`
+                            "UINT16 tensor має непарний розмір"
                         );
                     }
 
                     return new Uint16Array(
                         bytes.buffer
                     );
-                }
 
 
                 // FLOAT16
-                case 10: {
+                case 10:
 
                     if (
                         bytes.byteLength % 2 !== 0
                     ) {
 
                         throw new Error(
-                            `FLOAT16 tensor має непарний розмір: ${bytes.byteLength}`
+                            "FLOAT16 tensor має непарний розмір"
                         );
                     }
 
                     return new Uint16Array(
                         bytes.buffer
                     );
-                }
 
 
                 default:
 
                     console.warn(
-                        "[AI] Невідомий ONNX dataType:",
+                        "[AI] Невідомий dataType:",
                         tensor.dataType
                     );
 
@@ -478,41 +528,64 @@ class SmallLLM {
     }
 
 
-    _float16(value) {
+    _float16ToFloat32(value) {
 
         const h =
-            Number(value) & 0xffff;
+            Number(value) &
+            0xffff;
+
 
         const sign =
             (h & 0x8000)
                 ? -1
                 : 1;
 
+
         const exponent =
-            (h >> 10) & 0x1f;
+            (h >> 10) &
+            0x1f;
+
 
         const fraction =
             h & 0x03ff;
 
 
-        if (exponent === 0) {
+        if (
+            exponent === 0
+        ) {
 
-            if (fraction === 0) {
+            if (
+                fraction === 0
+            ) {
+
                 return sign * 0;
             }
 
+
             return (
                 sign *
-                Math.pow(2, -14) *
-                (fraction / 1024)
+                Math.pow(
+                    2,
+                    -14
+                ) *
+                (
+                    fraction /
+                    1024
+                )
             );
         }
 
 
-        if (exponent === 31) {
+        if (
+            exponent === 31
+        ) {
 
-            if (fraction === 0) {
-                return sign * Infinity;
+            if (
+                fraction === 0
+            ) {
+
+                return sign *
+                    Infinity;
             }
 
             return NaN;
@@ -525,78 +598,163 @@ class SmallLLM {
                 2,
                 exponent - 15
             ) *
-            (1 + fraction / 1024)
+            (
+                1 +
+                fraction / 1024
+            )
         );
     }
 
 
-    _unpackQ4(byte, high) {
+    _unpackQ4(
+        byte,
+        high
+    ) {
 
-        if (!high) {
-
-            return byte & 0x0f;
-        }
-
-        return (
-            (byte >> 4) & 0x0f
-        );
+        return high
+            ? (
+                (byte >> 4) &
+                0x0f
+            )
+            : (
+                byte &
+                0x0f
+            );
     }
 
 
-    _getPackedZeroPoint(
+    _getZeroPoint(
         zeroPoints,
         index
     ) {
 
-        if (!zeroPoints) {
+        if (
+            !zeroPoints
+        ) {
+
             return 8;
         }
 
 
         const byte =
             zeroPoints[
-                Math.floor(index / 2)
+                Math.floor(
+                    index / 2
+                )
             ];
 
 
-        if (byte === undefined) {
+        if (
+            byte === undefined
+        ) {
+
             return 8;
         }
 
 
-        const high =
-            (index & 1) !== 0;
-
-
         return this._unpackQ4(
             byte,
-            high
+            (index & 1) !== 0
         );
     }
 
 
-    _dequantizeMatMulNBits(node) {
+    _dumpBytes(
+        data,
+        count = 32
+    ) {
 
-        if (!node) {
+        if (!data) {
 
-            throw new Error(
-                "MatMulNBits node не знайдений."
+            return [];
+        }
+
+
+        const result = [];
+
+
+        const n =
+            Math.min(
+                count,
+                data.length
+            );
+
+
+        for (
+            let i = 0;
+            i < n;
+            i++
+        ) {
+
+            result.push(
+                Number(
+                    data[i]
+                )
             );
         }
+
+
+        return result;
+    }
+
+
+    _decodeQ4Sample(node) {
+
+        console.log(
+            "[AI] ===== Q4 SAMPLE START ====="
+        );
 
 
         const inputs =
             node.inputs || [];
 
 
+        console.log(
+            "[AI] Node:",
+            node.name
+        );
+
+
+        console.log(
+            "[AI] Inputs:",
+            inputs
+        );
+
+
+        console.log(
+            "[AI] Attributes:",
+            node.attributes
+        );
+
+
         const weightName =
             inputs[1];
+
 
         const scaleName =
             inputs[2];
 
-        const zeroPointName =
-            inputs[3];
+
+        const zeroName =
+            inputs[3] || null;
+
+
+        console.log(
+            "[AI] Weight:",
+            weightName
+        );
+
+
+        console.log(
+            "[AI] Scale:",
+            scaleName
+        );
+
+
+        console.log(
+            "[AI] ZeroPoint:",
+            zeroName
+        );
 
 
         const weightTensor =
@@ -611,18 +769,36 @@ class SmallLLM {
             );
 
 
-        const zeroPointTensor =
-            zeroPointName
+        const zeroTensor =
+            zeroName
                 ? this.model.getInitializer(
-                    zeroPointName
+                    zeroName
                   )
                 : null;
+
+
+        console.log(
+            "[AI] Weight tensor:",
+            weightTensor
+        );
+
+
+        console.log(
+            "[AI] Scale tensor:",
+            scaleTensor
+        );
+
+
+        console.log(
+            "[AI] Zero tensor:",
+            zeroTensor
+        );
 
 
         if (!weightTensor) {
 
             throw new Error(
-                `Q4 weight не знайдений: ${weightName}`
+                "Weight tensor не знайдений."
             );
         }
 
@@ -630,7 +806,85 @@ class SmallLLM {
         if (!scaleTensor) {
 
             throw new Error(
-                `Q4 scale не знайдений: ${scaleName}`
+                "Scale tensor не знайдений."
+            );
+        }
+
+
+        const weights =
+            this._readRawTensor(
+                weightTensor
+            );
+
+
+        const scales =
+            this._readRawTensor(
+                scaleTensor
+            );
+
+
+        const zeroPoints =
+            zeroTensor
+                ? this._readRawTensor(
+                    zeroTensor
+                  )
+                : null;
+
+
+        console.log(
+            "[AI] Weight type:",
+            weights &&
+            weights.constructor.name
+        );
+
+
+        console.log(
+            "[AI] Scale type:",
+            scales &&
+            scales.constructor.name
+        );
+
+
+        console.log(
+            "[AI] Zero type:",
+            zeroPoints &&
+            zeroPoints.constructor.name
+        );
+
+
+        console.log(
+            "[AI] First weight bytes:",
+            this._dumpBytes(
+                weights,
+                64
+            )
+        );
+
+
+        console.log(
+            "[AI] First scale values:",
+            scales
+                ? Array.from(
+                    scales.slice(
+                        0,
+                        Math.min(
+                            32,
+                            scales.length
+                        )
+                    )
+                  )
+                : []
+        );
+
+
+        if (zeroPoints) {
+
+            console.log(
+                "[AI] First zero-point bytes:",
+                this._dumpBytes(
+                    zeroPoints,
+                    32
+                )
             );
         }
 
@@ -668,76 +922,25 @@ class SmallLLM {
 
 
         console.log(
-            "[AI] QMatMul:",
+            "[AI] Q4 attributes:",
             {
-                node: node.name,
                 K,
                 N,
                 bits,
-                blockSize,
-                weight: weightName,
-                scale: scaleName,
-                zeroPoint: zeroPointName
+                blockSize
             }
         );
 
 
-        const packedWeights =
-            this._readRawTensor(
-                weightTensor
-            );
-
-
-        const scales =
-            this._readRawTensor(
-                scaleTensor
-            );
-
-
-        const zeroPoints =
-            zeroPointTensor
-                ? this._readRawTensor(
-                    zeroPointTensor
-                  )
-                : null;
-
-
-        if (!packedWeights) {
+        if (
+            !K ||
+            !N
+        ) {
 
             throw new Error(
-                "Не вдалося прочитати Q4 weights."
+                "У MatMulNBits немає K або N."
             );
         }
-
-
-        if (!scales) {
-
-            throw new Error(
-                "Не вдалося прочитати Q4 scales."
-            );
-        }
-
-
-        const actualK =
-            K ||
-            (
-                weightTensor.dims &&
-                weightTensor.dims[1]
-            );
-
-
-        const actualN =
-            N ||
-            (
-                weightTensor.dims &&
-                weightTensor.dims[0]
-            );
-
-
-        const blocksPerRow =
-            Math.ceil(
-                actualK / blockSize
-            );
 
 
         const valuesPerByte =
@@ -746,19 +949,29 @@ class SmallLLM {
 
         const blobSize =
             Math.ceil(
-                blockSize * bits / 8
+                blockSize *
+                bits /
+                8
+            );
+
+
+        const blocksPerRow =
+            Math.ceil(
+                K /
+                blockSize
             );
 
 
         console.log(
             "[AI] Q4 layout:",
             {
-                actualK,
-                actualN,
+                K,
+                N,
+                bits,
                 blockSize,
-                blocksPerRow,
                 valuesPerByte,
                 blobSize,
+                blocksPerRow,
 
                 weightDims:
                     weightTensor.dims,
@@ -767,12 +980,12 @@ class SmallLLM {
                     scaleTensor.dims,
 
                 weightBytes:
-                    packedWeights.byteLength,
+                    weights.byteLength,
 
                 scaleValues:
                     scales.length,
 
-                zeroPointBytes:
+                zeroBytes:
                     zeroPoints
                         ? zeroPoints.byteLength
                         : 0
@@ -781,64 +994,66 @@ class SmallLLM {
 
 
         /*
-         * Декодуємо невеликий фрагмент,
-         * а не всю матрицю.
-         *
-         * Це потрібно для перевірки формату
-         * і не повинно споживати сотні MB RAM.
+         * Перевіряємо перші 4 рядки
+         * і перші 32 значення кожного.
          */
 
-        const sampleRows =
+        const rows =
             Math.min(
-                actualN,
-                4
+                4,
+                N
             );
 
 
-        const sampleCols =
+        const cols =
             Math.min(
-                actualK,
-                32
-            );
-
-
-        const sample =
-            new Float32Array(
-                sampleRows *
-                sampleCols
+                32,
+                K
             );
 
 
         let minimum =
             Infinity;
 
+
         let maximum =
             -Infinity;
+
 
         let bad =
             0;
 
 
+        const decoded =
+            [];
+
+
         for (
             let row = 0;
-            row < sampleRows;
+            row < rows;
             row++
         ) {
 
+            const rowValues =
+                [];
+
+
             for (
                 let col = 0;
-                col < sampleCols;
+                col < cols;
                 col++
             ) {
 
                 const block =
                     Math.floor(
-                        col / blockSize
+                        col /
+                        blockSize
                     );
 
 
                 const inside =
-                    col % blockSize;
+                    col %
+                    blockSize;
 
 
                 const scaleIndex =
@@ -854,17 +1069,27 @@ class SmallLLM {
 
 
                 const scale =
-                    this._float16(
+                    this._float16ToFloat32(
                         scaleRaw
                     );
 
 
+                /*
+                 * MatMulNBits B:
+                 *
+                 * [N, blocks, packed]
+                 */
+
                 const packedIndex =
-                    row *
-                    blocksPerRow *
-                    blobSize +
-                    block *
-                    blobSize +
+                    (
+                        row *
+                        blocksPerRow *
+                        blobSize
+                    ) +
+                    (
+                        block *
+                        blobSize
+                    ) +
                     Math.floor(
                         inside /
                         valuesPerByte
@@ -872,7 +1097,7 @@ class SmallLLM {
 
 
                 const packed =
-                    packedWeights[
+                    weights[
                         packedIndex
                     ];
 
@@ -883,67 +1108,57 @@ class SmallLLM {
 
                     bad++;
 
+                    rowValues.push(
+                        NaN
+                    );
+
                     continue;
                 }
 
 
-                let q;
+                let q = 0;
 
 
-                if (bits === 4) {
+                if (
+                    bits === 4
+                ) {
 
                     q =
                         this._unpackQ4(
                             packed,
                             (
-                                inside & 1
+                                inside &
+                                1
                             ) !== 0
                         );
-
-                } else {
-
-                    q = 0;
                 }
 
 
-                let zero =
-                    8;
-
-
-                if (
-                    zeroPoints
-                ) {
-
-                    zero =
-                        this._getPackedZeroPoint(
-                            zeroPoints,
-                            scaleIndex
-                        );
-                }
+                const zero =
+                    this._getZeroPoint(
+                        zeroPoints,
+                        scaleIndex
+                    );
 
 
                 const value =
                     (
-                        q - zero
-                    ) * scale;
+                        q -
+                        zero
+                    ) *
+                    scale;
 
 
-                sample[
-                    row *
-                    sampleCols +
-                    col
-                ] = value;
+                rowValues.push(
+                    value
+                );
 
 
                 if (
-                    !Number.isFinite(
+                    Number.isFinite(
                         value
                     )
                 ) {
-
-                    bad++;
-
-                } else {
 
                     minimum =
                         Math.min(
@@ -951,14 +1166,30 @@ class SmallLLM {
                             value
                         );
 
+
                     maximum =
                         Math.max(
                             maximum,
                             value
                         );
+
+                } else {
+
+                    bad++;
                 }
             }
+
+
+            decoded.push(
+                rowValues
+            );
         }
+
+
+        console.log(
+            "[AI] Q4 decoded sample:",
+            decoded
+        );
 
 
         console.log(
@@ -966,25 +1197,27 @@ class SmallLLM {
             {
                 minimum,
                 maximum,
-                bad,
-                sampleRows,
-                sampleCols
+                bad
             }
         );
 
 
+        console.log(
+            "[AI] ===== Q4 SAMPLE END ====="
+        );
+
+
         return {
-            node,
-            K: actualK,
-            N: actualN,
+            K,
+            N,
             bits,
             blockSize,
-            blocksPerRow,
             blobSize,
-            packedWeights,
+            blocksPerRow,
+            weights,
             scales,
             zeroPoints,
-            sample,
+            decoded,
             minimum,
             maximum,
             bad
@@ -992,110 +1225,90 @@ class SmallLLM {
     }
 
 
-    _prepareQuantizedWeights() {
-
-        if (
-            !this.model ||
-            !this.model.inspectMatMulNBits
-        ) {
-
-            throw new Error(
-                "ONNX model не підтримує MatMulNBits inspection."
-            );
-        }
-
-
-        const nodes =
-            this.model.inspectMatMulNBits();
-
-
-        if (
-            !nodes ||
-            !nodes.length
-        ) {
-
-            throw new Error(
-                "У моделі не знайдено MatMulNBits."
-            );
-        }
-
-
-        this.quantizedLayers =
-            nodes;
-
-
-        console.log(
-            "[AI] Quantized linear layers:",
-            nodes.length
-        );
-
-
-        this.firstQMatMul =
-            nodes[0];
-
-
-        console.log(
-            "[AI] Перший MatMulNBits:",
-            {
-                name:
-                    this.firstQMatMul.name,
-
-                opType:
-                    this.firstQMatMul.opType,
-
-                inputs:
-                    this.firstQMatMul.inputs,
-
-                outputs:
-                    this.firstQMatMul.outputs,
-
-                attributes:
-                    this.firstQMatMul.attributes
-            }
-        );
-    }
-
-
     _prepareForward() {
 
         try {
 
-            this._prepareQuantizedWeights();
-
-
             if (
-                !this.firstQMatMul
+                !this.model.inspectMatMulNBits
             ) {
 
                 throw new Error(
-                    "Перший QMatMul відсутній."
+                    "inspectMatMulNBits недоступний."
                 );
             }
 
 
-            const decoded =
-                this._dequantizeMatMulNBits(
+            const nodes =
+                this.model.inspectMatMulNBits();
+
+
+            if (
+                !nodes ||
+                nodes.length === 0
+            ) {
+
+                throw new Error(
+                    "MatMulNBits не знайдено."
+                );
+            }
+
+
+            this.quantizedLayers =
+                nodes;
+
+
+            console.log(
+                "[AI] Quantized linear layers:",
+                nodes.length
+            );
+
+
+            this.firstQMatMul =
+                nodes[0];
+
+
+            console.log(
+                "[AI] Перший MatMulNBits:",
+                {
+                    name:
+                        this.firstQMatMul.name,
+
+                    inputs:
+                        this.firstQMatMul.inputs,
+
+                    outputs:
+                        this.firstQMatMul.outputs,
+
+                    attributes:
+                        this.firstQMatMul.attributes
+                }
+            );
+
+
+            const result =
+                this._decodeQ4Sample(
                     this.firstQMatMul
                 );
 
 
             if (
-                decoded.bad > 0
+                result.bad > 0
             ) {
 
                 console.warn(
-                    "[AI] Q4 sample містить проблемні значення:",
-                    decoded.bad
+                    "[AI] Q4 sample має проблемні значення:",
+                    result.bad
                 );
             }
 
 
             if (
                 !Number.isFinite(
-                    decoded.minimum
+                    result.minimum
                 ) ||
                 !Number.isFinite(
-                    decoded.maximum
+                    result.maximum
                 )
             ) {
 
@@ -1113,12 +1326,10 @@ class SmallLLM {
                 "[AI] Q4 forward preparation OK."
             );
 
-
         } catch (error) {
 
             this.forwardReady =
                 false;
-
 
             console.error(
                 "[AI] Q4 forward preparation error:",
@@ -1127,11 +1338,6 @@ class SmallLLM {
         }
     }
 
-
-    /*
-     * Базові математичні примітиви.
-     * Вони потрібні для майбутнього Llama forward.
-     */
 
     rmsNorm(
         input,
@@ -1235,13 +1441,11 @@ class SmallLLM {
             i++
         ) {
 
-            if (
-                input[i] > max
-            ) {
-
-                max =
-                    input[i];
-            }
+            max =
+                Math.max(
+                    max,
+                    input[i]
+                );
         }
 
 
@@ -1265,11 +1469,6 @@ class SmallLLM {
         }
 
 
-        if (sum === 0) {
-            return out;
-        }
-
-
         for (
             let i = 0;
             i < input.length;
@@ -1287,7 +1486,7 @@ class SmallLLM {
 
     dot(a, b) {
 
-        const length =
+        const n =
             Math.min(
                 a.length,
                 b.length
@@ -1299,7 +1498,7 @@ class SmallLLM {
 
         for (
             let i = 0;
-            i < length;
+            i < n;
             i++
         ) {
 
@@ -1316,7 +1515,9 @@ class SmallLLM {
     argmax(input) {
 
         let index = 0;
-        let value = -Infinity;
+
+        let value =
+            -Infinity;
 
 
         for (
@@ -1326,7 +1527,8 @@ class SmallLLM {
         ) {
 
             if (
-                input[i] > value
+                input[i] >
+                value
             ) {
 
                 value =
@@ -1354,22 +1556,15 @@ class SmallLLM {
             );
 
 
-        const half =
-            Math.floor(
-                vector.length / 2
-            );
-
-
         for (
             let i = 0;
-            i < half;
-            i++
+            i + 1 <
+            vector.length;
+            i += 2
         ) {
 
             const exponent =
-                (
-                    2 * i
-                ) /
+                i /
                 vector.length;
 
 
@@ -1387,35 +1582,31 @@ class SmallLLM {
 
 
             const cos =
-                Math.cos(angle);
+                Math.cos(
+                    angle
+                );
 
 
             const sin =
-                Math.sin(angle);
+                Math.sin(
+                    angle
+                );
 
 
             const a =
-                vector[
-                    2 * i
-                ];
+                vector[i];
 
 
             const b =
-                vector[
-                    2 * i + 1
-                ];
+                vector[i + 1];
 
 
-            out[
-                2 * i
-            ] =
+            out[i] =
                 a * cos -
                 b * sin;
 
 
-            out[
-                2 * i + 1
-            ] =
+            out[i + 1] =
                 a * sin +
                 b * cos;
         }
@@ -1430,7 +1621,9 @@ class SmallLLM {
         options = {}
     ) {
 
-        if (!this.ready) {
+        if (
+            !this.ready
+        ) {
 
             throw new Error(
                 "SmallLLM ще не готовий."
@@ -1438,7 +1631,9 @@ class SmallLLM {
         }
 
 
-        if (!this.forwardReady) {
+        if (
+            !this.forwardReady
+        ) {
 
             throw new Error(
                 "Q4 forward не пройшов підготовчий тест."
@@ -1446,40 +1641,14 @@ class SmallLLM {
         }
 
 
-        if (!this.tokenizer) {
+        if (
+            !this.tokenizer
+        ) {
 
             throw new Error(
                 "Tokenizer ще не підключений."
             );
         }
-
-
-        /*
-         * Тут поки НЕ робимо вигляд,
-         * що повний Llama forward уже працює.
-         *
-         * Наступний етап:
-         *
-         * tokenizer
-         * ↓
-         * embedding
-         * ↓
-         * 30 transformer layers
-         * ↓
-         * attention
-         * ↓
-         * RoPE
-         * ↓
-         * GQA
-         * ↓
-         * SwiGLU
-         * ↓
-         * RMSNorm
-         * ↓
-         * lm_head
-         * ↓
-         * sampling
-         */
 
 
         throw new Error(
