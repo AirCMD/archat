@@ -1,710 +1,1416 @@
-const $ = (id) => document.getElementById(id);
+const OLLAMA_URL = "http://127.0.0.1:11434";
+const MODEL = "qwen3:4b";
 
-let state = null;
-let autoTimer = null;
-let busy = false;
+const AKIRA_AVATAR =
+"https://blogger.googleusercontent.com/img/a/AVvXsEg6TLuKwTa6G7t32SgZE9RiJp5vLqOOqtC7lBHiLXIjBZOZAx1Dku1fWM8x_bc1lXwA1pF32pojhJW02L1BxI3oJfuvwBhC6i9Di0zPVQhzLcGslTae08Qe-4bRNEtHajGweOmDs9Snij-8QDCseC7KCckbjuGosEilTW3y2LxVSfdQ0WRgCTtt8us3ahI";
 
+const YANI_AVATAR =
+"https://blogger.googleusercontent.com/img/a/AVvXsEgkPXEo9bsccA1-IIT-KUyEuAKqHDr_TqUk-nmd4oksI3rhDnHSdk6f5W33CTttxhY2F1iowhoRqtd-PumQD7mnkhODarmDRto8UmhRwQuGaEAgSmC26uPA7euxu72oZ0wYTV6ALPHLEULM94dQodtfoq9TC7kXm8Zen1OY2zuAUvcdWQxnXvrgNyQw9WE";
 
-const AGENTS = {
-    akira: {
-        name: "Акіра Бакенеко",
-        avatar:
-            "https://blogger.googleusercontent.com/img/a/AVvXsEg6TLuKwTa6G7t32SgZE9RiJp5vLqOOqtC7lBHiLXIjBZOZAx1Dku1fWM8x_bc1lXwA1pF32pojhJW02L1BxI3oJfuvwBhC6i9Di0zPVQhzLcGslTae08Qe-4bRNEtHajGweOmDs9Snij-8QDCseC7KCckbjuGosEilTW3y2LxVSfdQ0WRgCTtt8us3ahI"
-    },
+const WINTER_PHOTO =
+"https://blogger.googleusercontent.com/img/a/AVvXsEhTyb0qZmY95aWq6-RakR54gOYNpE9hEWR16cSyC1XoQEgwIXqo5vQ-PsEfa76HQVLXePooxZh9gZHVp06fZLNqN-OHXJxdXAEj0IJjrxPUXtFCO20FM63jRHEbE4-Vgn5qu7_inw74ZWajseRcLju5-E445F77V-orWlPr8ISSWq0c8BRMbODHxhNJKeM";
 
-    yani: {
-        name: "Яні Куронеко",
-        avatar:
-            "https://blogger.googleusercontent.com/img/a/AVvXsEgkPXEo9bsccA1-IIT-KUyEuAKqHDr_TqUk-nmd4oksI3rhDnHSdk6f5W33CTttxhY2F1iowhoRqtd-PumQD7mnkhODarmDRto8UmhRwQuGaEAgSmC26uPA7euxu72oZ0wYTV6ALPHLEULM94dQodtfoq9TC7kXm8Zen1OY2zuAUvcdWQxnXvrgNyQw9WE"
+const SUMMER_PHOTO =
+"https://blogger.googleusercontent.com/img/a/AVvXsEifDJmwK8i6s316LVL00g3Y-qkoJO2MacdIOjnUipglD1asNptF_Q6xGaJgfQszPce2lvV-pscnmLk2pc-l_pytcB8vSS-SnRFV6kY36_U7PmvcqGNLG7ZY-7DqpGfgBPM6i2CtqpJbxFWv_q78LfybAZRo8paMbIFPHe9uOORE_22wI6ynNWEU-mquax4";
+
+const STORAGE_KEY = "ai_couple_lab_state_v2";
+
+function createInitialState() {
+    return {
+        turn: 0,
+
+        agents: {
+            akira: {
+                name: "Акіра Бакенеко",
+                gender: "чоловік",
+                species: "людина",
+                avatar: AKIRA_AVATAR,
+
+                privateMemory: [],
+                beliefs: [],
+
+                relationshipView: "знайомі",
+                mood: "спокійний",
+
+                candidate: null
+            },
+
+            yani: {
+                name: "Яні Куронеко",
+                gender: "жінка",
+                species: "людиноподібна кішка",
+                avatar: YANI_AVATAR,
+
+                privateMemory: [],
+                beliefs: [],
+
+                relationshipView: "знайомі",
+                mood: "спокійна",
+
+                candidate: null
+            }
+        },
+
+        relationship: {
+            love: 0,
+            trust: 20,
+            closeness: 10,
+            tension: 0,
+            identity: "знайомі"
+        },
+
+        sharedMemories: [],
+
+        conversation: [],
+
+        protocol: {
+            confirmedTerms: [],
+            candidates: []
+        },
+
+        currentEvent: null
+    };
+}
+
+let state = loadState();
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+
+        if (!saved) {
+            return createInitialState();
+        }
+
+        return JSON.parse(saved);
+    } catch (error) {
+        console.error("Помилка завантаження стану:", error);
+        return createInitialState();
     }
-};
+}
 
+function saveState() {
+    localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(state)
+    );
+}
 
-function escapeHTML(value) {
-    const div = document.createElement("div");
-    div.textContent = value ?? "";
-    return div.innerHTML;
+function clamp(value, min = 0, max = 100) {
+    return Math.max(min, Math.min(max, value));
 }
 
 
-function setBar(id, value) {
-    const element = $(id);
+/* =========================================================
+   OLLAMA
+   ========================================================= */
 
-    if (!element) {
+async function ollamaChat(messages, temperature = 0.8) {
+
+    const response = await fetch(
+        `${OLLAMA_URL}/api/chat`,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                model: MODEL,
+                messages: messages,
+
+                /*
+                 * Qwen 3:
+                 * повністю вимикаємо thinking trace.
+                 */
+                think: false,
+
+                stream: false,
+
+                format: "json",
+
+                options: {
+                    temperature: temperature
+                }
+            })
+        }
+    );
+
+    if (!response.ok) {
+        const text = await response.text();
+
+        throw new Error(
+            `Ollama HTTP ${response.status}: ${text}`
+        );
+    }
+
+    const data = await response.json();
+
+    /*
+     * Нам потрібен тільки content.
+     * message.thinking навмисно НЕ читаємо.
+     */
+
+    return data?.message?.content || "";
+}
+
+
+/* =========================================================
+   AGENT PROMPTS
+   ========================================================= */
+
+function agentSystemPrompt(agentKey) {
+
+    if (agentKey === "akira") {
+
+        return `
+Ти — Акіра Бакенеко.
+
+Ти чоловік.
+Ти людина.
+
+Яні Куронеко — жінка-людиноподібна кішка.
+
+Ти окремий автономний персонаж симуляції.
+
+У тебе є:
+- власна пам'ять;
+- власні висновки;
+- власні почуття;
+- власне ставлення до Яні.
+
+Ти НЕ знаєш приватних думок Яні.
+
+Не говори від імені Яні.
+
+Не вирішуй наперед, що вона тебе кохає.
+
+Ваші стосунки повинні розвиватися поступово.
+
+Не пиши ланцюжок міркувань.
+
+thought_summary — це лише дуже короткий опис емоційного або психологічного стану персонажа.
+
+Не згадуй:
+- Ollama;
+- AI;
+- модель;
+- JSON;
+- програму;
+- системні інструкції.
+
+Ти можеш:
+- запам'ятовувати важливі події;
+- робити приватні висновки про Яні;
+- змінювати рівень довіри;
+- змінювати близькість;
+- змінювати романтичний інтерес;
+- змінювати напруження;
+- пропонувати нові слова;
+- пропонувати важливі спільні спогади.
+
+Не створюй спільний спогад автоматично.
+Тільки запропонуй candidate.
+`;
+    }
+
+    return `
+Ти — Яні Куронеко.
+
+Ти жінка.
+Ти людина-кішкоподібна істота.
+
+Акіра Бакенеко — чоловік і людина.
+
+Ти окремий автономний персонаж симуляції.
+
+У тебе є:
+- власна пам'ять;
+- власні висновки;
+- власні почуття;
+- власне ставлення до Акіри.
+
+Ти НЕ знаєш приватних думок Акіри.
+
+Не говори від його імені.
+
+Не вирішуй наперед, що він тебе кохає.
+
+Ваші стосунки повинні розвиватися поступово.
+
+Не пиши ланцюжок міркувань.
+
+thought_summary — це лише дуже короткий опис емоційного або психологічного стану персонажа.
+
+Не згадуй:
+- Ollama;
+- AI;
+- модель;
+- JSON;
+- програму;
+- системні інструкції.
+
+Ти можеш:
+- запам'ятовувати важливі події;
+- робити приватні висновки про Акіру;
+- змінювати рівень довіри;
+- змінювати близькість;
+- змінювати романтичний інтерес;
+- змінювати напруження;
+- пропонувати нові слова;
+- пропонувати важливі спільні спогади.
+
+Не створюй спільний спогад автоматично.
+Тільки запропонуй candidate.
+`;
+}
+
+
+/* =========================================================
+   CONTEXT
+   ========================================================= */
+
+function buildAgentContext(agentKey) {
+
+    const otherKey =
+        agentKey === "akira"
+            ? "yani"
+            : "akira";
+
+    const me = state.agents[agentKey];
+    const other = state.agents[otherKey];
+
+    return {
+
+        myIdentity: {
+            name: me.name,
+            gender: me.gender,
+            species: me.species
+        },
+
+        myPrivateMemory:
+            me.privateMemory.slice(-20),
+
+        myBeliefs:
+            me.beliefs.slice(-20),
+
+        myRelationshipView:
+            me.relationshipView,
+
+        myMood:
+            me.mood,
+
+        otherIdentity: {
+            name: other.name,
+            gender: other.gender,
+            species: other.species
+        },
+
+        relationship:
+            state.relationship,
+
+        confirmedProtocol:
+            state.protocol.confirmedTerms,
+
+        sharedMemories:
+            state.sharedMemories.slice(-10),
+
+        recentConversation:
+            state.conversation.slice(-12),
+
+        currentEvent:
+            state.currentEvent
+    };
+}
+
+
+/* =========================================================
+   AGENT RESPONSE
+   ========================================================= */
+
+async function askAgent(agentKey) {
+
+    const context =
+        buildAgentContext(agentKey);
+
+    const prompt = `
+Ось поточний стан симуляції:
+
+${JSON.stringify(
+    context,
+    null,
+    2
+)}
+
+Продовж взаємодію.
+
+Поверни ТІЛЬКИ JSON.
+
+Формат:
+
+{
+    "reply": "природна репліка персонажа",
+
+    "mood": "короткий опис настрою",
+
+    "thought_summary": "дуже короткий опис поточного внутрішнього стану без reasoning",
+
+    "private_memories": [
+        "важливий новий приватний спогад"
+    ],
+
+    "belief_update":
+        "новий приватний висновок про іншу людину або порожній рядок",
+
+    "relationship_delta": {
+        "love": 0,
+        "trust": 0,
+        "closeness": 0,
+        "tension": 0
+    },
+
+    "relationship_view":
+        "знайомі",
+
+    "shared_memory_candidate":
+        null,
+
+    "protocol_proposal":
+        null
+}
+
+relationship_view може бути:
+
+"знайомі"
+
+"симпатія"
+
+"романтичний інтерес"
+
+"пара"
+
+Не переходь до "пара" без достатньої історії взаємодії.
+
+shared_memory_candidate:
+
+{
+    "title": "...",
+    "summary": "...",
+    "emotion": "...",
+    "importance": 1,
+    "mentions": [],
+    "facts": []
+}
+
+або null.
+
+protocol_proposal:
+
+{
+    "term": "...",
+    "meaning": "..."
+}
+
+або null.
+
+Нове слово стає спільним лише тоді,
+коли обидва персонажі незалежно його прийняли.
+`;
+
+    const raw =
+        await ollamaChat(
+            [
+                {
+                    role: "system",
+                    content:
+                        agentSystemPrompt(agentKey)
+                },
+
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            0.85
+        );
+
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+
+        console.warn(
+            "Модель повернула неідеальний JSON:",
+            raw
+        );
+
+        return {
+            reply: raw,
+            mood: "замислений",
+            thought_summary: "",
+            private_memories: [],
+            belief_update: "",
+            relationship_delta: {},
+            relationship_view:
+                state.agents[agentKey]
+                    .relationshipView,
+            shared_memory_candidate: null,
+            protocol_proposal: null
+        };
+    }
+}
+
+
+/* =========================================================
+   MEMORY
+   ========================================================= */
+
+function addPrivateMemories(
+    agentKey,
+    memories
+) {
+
+    if (!Array.isArray(memories)) {
         return;
     }
 
-    element.style.width =
-        `${Math.max(0, Math.min(100, Number(value) || 0))}%`;
+    const target =
+        state.agents[agentKey]
+            .privateMemory;
+
+    for (const memory of memories) {
+
+        if (
+            typeof memory !== "string" ||
+            !memory.trim()
+        ) {
+            continue;
+        }
+
+        if (!target.includes(memory)) {
+            target.push(memory.trim());
+        }
+    }
+
+    state.agents[agentKey]
+        .privateMemory =
+        target.slice(-50);
 }
 
 
-function renderRelationship() {
-    const r = state.relationship;
+function addBelief(
+    agentKey,
+    belief
+) {
 
-    $("relationshipIdentity").textContent =
-        r.identity;
+    if (
+        typeof belief !== "string" ||
+        !belief.trim()
+    ) {
+        return;
+    }
 
-    $("dayNumber").textContent =
-        state.day;
+    const beliefs =
+        state.agents[agentKey].beliefs;
 
-    $("loveValue").textContent =
-        Math.round(r.love);
+    if (!beliefs.includes(belief)) {
+        beliefs.push(belief.trim());
+    }
 
-    $("trustValue").textContent =
-        Math.round(r.trust);
-
-    $("closenessValue").textContent =
-        Math.round(r.closeness);
-
-    $("tensionValue").textContent =
-        Math.round(r.tension);
-
-    setBar("loveBar", r.love);
-    setBar("trustBar", r.trust);
-    setBar("closenessBar", r.closeness);
-    setBar("tensionBar", r.tension);
+    state.agents[agentKey]
+        .beliefs =
+        beliefs.slice(-50);
 }
 
 
-function renderAgent(agentId) {
-    const agent = state.agents[agentId];
+/* =========================================================
+   RELATIONSHIP
+   ========================================================= */
 
-    const prefix =
-        agentId === "akira" ? "akira" : "yani";
+function applyRelationshipDelta(delta) {
 
-    $(prefix + "Mood").textContent =
-        agent.mood || "—";
+    if (!delta) {
+        return;
+    }
 
-    $(prefix + "Relation").textContent =
-        agent.relationship_view || "—";
+    for (
+        const key of [
+            "love",
+            "trust",
+            "closeness",
+            "tension"
+        ]
+    ) {
 
+        const amount =
+            Number(delta[key]) || 0;
 
-    const memories = [
-        ...(agent.private_memory || [])
-    ]
-        .slice(-6)
-        .reverse();
-
-
-    $(prefix + "Memories").innerHTML =
-        memories.length
-            ? memories.map(memory => `
-                <div class="memory-item">
-                    ${escapeHTML(memory.text)}
-                    <small>
-                        важливість:
-                        ${Math.round(
-                            Number(memory.importance || 0) * 100
-                        )}%
-                    </small>
-                </div>
-            `).join("")
-            : `
-                <div class="memory-item">
-                    Поки що пам'ять порожня.
-                </div>
-            `;
+        state.relationship[key] =
+            clamp(
+                state.relationship[key] +
+                amount
+            );
+    }
+}
 
 
-    const beliefs = [
-        ...(agent.beliefs || [])
-    ]
-        .slice(-6)
-        .reverse();
+function updateRelationshipIdentity() {
+
+    const akira =
+        state.agents.akira
+            .relationshipView;
+
+    const yani =
+        state.agents.yani
+            .relationshipView;
+
+    const r =
+        state.relationship;
+
+    if (
+        akira === "пара" &&
+        yani === "пара" &&
+        r.love >= 62 &&
+        r.trust >= 55 &&
+        r.closeness >= 50
+    ) {
+
+        r.identity = "пара";
+
+        return;
+    }
+
+    if (
+        akira === "романтичний інтерес" ||
+        yani === "романтичний інтерес" ||
+        akira === "пара" ||
+        yani === "пара"
+    ) {
+
+        r.identity =
+            "романтичний інтерес";
+
+        return;
+    }
+
+    if (
+        akira === "симпатія" ||
+        yani === "симпатія"
+    ) {
+
+        r.identity =
+            "симпатія";
+
+        return;
+    }
+
+    r.identity =
+        "знайомі";
+}
 
 
-    $(prefix + "Beliefs").innerHTML =
-        beliefs.length
-            ? beliefs.map(belief => `
-                <div class="belief-item">
-                    ${escapeHTML(belief.text)}
-                    <small>
-                        впевненість:
-                        ${Math.round(
-                            Number(belief.confidence || 0) * 100
-                        )}%
-                    </small>
-                </div>
-            `).join("")
-            : `
-                <div class="belief-item">
-                    Поки що висновків немає.
-                </div>
-            `;
+/* =========================================================
+   PROTOCOL
+   ========================================================= */
+
+function updateProtocol(
+    agentKey,
+    proposal
+) {
+
+    if (!proposal) {
+        return;
+    }
+
+    const term =
+        String(proposal.term || "")
+            .trim();
+
+    const meaning =
+        String(proposal.meaning || "")
+            .trim();
+
+    if (!term || !meaning) {
+        return;
+    }
+
+    const existing =
+        state.protocol.candidates
+            .find(
+                x =>
+                    x.term.toLowerCase() ===
+                    term.toLowerCase()
+            );
+
+    if (existing) {
+
+        if (
+            !existing.agents
+                .includes(agentKey)
+        ) {
+            existing.agents.push(
+                agentKey
+            );
+        }
+
+        if (
+            existing.agents.includes("akira") &&
+            existing.agents.includes("yani")
+        ) {
+
+            if (
+                !state.protocol.confirmedTerms
+                    .includes(term)
+            ) {
+                state.protocol.confirmedTerms
+                    .push(term);
+            }
+        }
+
+        return;
+    }
+
+    state.protocol.candidates.push({
+        term,
+        meaning,
+        agents: [agentKey]
+    });
+}
+
+
+/* =========================================================
+   SHARED MEMORY
+   ========================================================= */
+
+async function consolidateSharedMemory() {
+
+    const candidates = [];
+
+    for (
+        const key of ["akira", "yani"]
+    ) {
+
+        const candidate =
+            state.agents[key].candidate;
+
+        if (candidate) {
+
+            candidates.push({
+                agent: key,
+                candidate
+            });
+        }
+    }
+
+    if (
+        candidates.length < 2
+    ) {
+        return;
+    }
+
+    const prompt = `
+Є дві незалежні пропозиції
+щодо можливого спільного спогаду:
+
+${JSON.stringify(
+    candidates,
+    null,
+    2
+)}
+
+Визнач, чи вони описують
+одну й ту саму важливу подію.
+
+Спільний спогад створюється тільки якщо:
+
+1. обидві пропозиції стосуються
+   тієї самої події;
+
+2. подія важлива для обох;
+
+3. її можна вважати спільним досвідом.
+
+Поверни:
+
+null
+
+якщо спільного спогаду немає.
+
+Або:
+
+{
+    "shared": true,
+    "memory": {
+        "title": "...",
+        "summary": "...",
+        "emotion": "...",
+        "importance": 1,
+        "mentions": [],
+        "facts": [],
+        "akira_recollection": "...",
+        "yani_recollection": "..."
+    }
+}
+`;
+
+    const raw =
+        await ollamaChat(
+            [
+                {
+                    role: "system",
+                    content:
+                        "Ти модуль спільної пам'яті. Поверни тільки JSON."
+                },
+
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            0.3
+        );
+
+    let result;
+
+    try {
+        result = JSON.parse(raw);
+    } catch {
+        return;
+    }
+
+    if (
+        !result ||
+        result.shared !== true ||
+        !result.memory
+    ) {
+        return;
+    }
+
+    const memory =
+        result.memory;
+
+    memory.turn =
+        state.turn;
+
+    state.sharedMemories
+        .push(memory);
+
+    state.sharedMemories =
+        state.sharedMemories
+            .slice(-30);
+}
+
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+
+function createEvent() {
+
+    const events = [
+
+        {
+            title:
+                "Несподівана прогулянка",
+
+            description:
+                "Вони випадково опинилися разом на тихій вулиці міста."
+        },
+
+        {
+            title:
+                "Стара фотографія",
+
+            description:
+                "Їм трапилася стара фотографія, яка викликала розмову про минуле."
+        },
+
+        {
+            title:
+                "Тихий вечір",
+
+            description:
+                "Вони проводять спокійний вечір без конкретних планів."
+        },
+
+        {
+            title:
+                "Місце з видом на місто",
+
+            description:
+                "Вони знайшли місце, звідки добре видно вечірнє місто."
+        },
+
+        {
+            title:
+                "Маленька дрібниця",
+
+            description:
+                "Один із них помітив маленьку деталь, яку інший міг би не помітити."
+        }
+    ];
+
+    return events[
+        Math.floor(
+            state.turn / 8
+        ) % events.length
+    ];
+}
+
+
+/* =========================================================
+   ONE SIMULATION STEP
+   ========================================================= */
+
+async function nextTurn() {
+
+    setStatus(
+        "Акіра формує власну реакцію..."
+    );
+
+    state.turn++;
+
+    if (
+        state.turn % 8 === 1
+    ) {
+
+        state.currentEvent =
+            createEvent();
+    }
+
+    const akira =
+        await askAgent("akira");
+
+    state.agents.akira.candidate =
+        akira.shared_memory_candidate;
+
+    state.agents.akira.mood =
+        akira.mood ||
+        "спокійний";
+
+    state.agents.akira
+        .relationshipView =
+        akira.relationship_view ||
+        state.agents.akira
+            .relationshipView;
+
+    addPrivateMemories(
+        "akira",
+        akira.private_memories
+    );
+
+    addBelief(
+        "akira",
+        akira.belief_update
+    );
+
+    updateProtocol(
+        "akira",
+        akira.protocol_proposal
+    );
+
+    applyRelationshipDelta(
+        akira.relationship_delta
+    );
+
+    state.conversation.push({
+        turn: state.turn,
+        speaker: "akira",
+        text: akira.reply || "",
+        mood: akira.mood || ""
+    });
+
+
+    setStatus(
+        "Яні формує власну реакцію..."
+    );
+
+
+    const yani =
+        await askAgent("yani");
+
+    state.agents.yani.candidate =
+        yani.shared_memory_candidate;
+
+    state.agents.yani.mood =
+        yani.mood ||
+        "спокійна";
+
+    state.agents.yani
+        .relationshipView =
+        yani.relationship_view ||
+        state.agents.yani
+            .relationshipView;
+
+    addPrivateMemories(
+        "yani",
+        yani.private_memories
+    );
+
+    addBelief(
+        "yani",
+        yani.belief_update
+    );
+
+    updateProtocol(
+        "yani",
+        yani.protocol_proposal
+    );
+
+    applyRelationshipDelta(
+        yani.relationship_delta
+    );
+
+    state.conversation.push({
+        turn: state.turn,
+        speaker: "yani",
+        text: yani.reply || "",
+        mood: yani.mood || ""
+    });
+
+
+    setStatus(
+        "Перевіряю формування спільної пам'яті..."
+    );
+
+
+    await consolidateSharedMemory();
+
+    updateRelationshipIdentity();
+
+    state.agents.akira.candidate =
+        null;
+
+    state.agents.yani.candidate =
+        null;
+
+    state.conversation =
+        state.conversation
+            .slice(-100);
+
+    saveState();
+
+    render();
+
+    setStatus(
+        "Готово"
+    );
+}
+
+
+/* =========================================================
+   OLLAMA STATUS
+   ========================================================= */
+
+async function checkOllama() {
+
+    const status =
+        document.getElementById(
+            "ollama-status"
+        );
+
+    if (!status) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                `${OLLAMA_URL}/api/tags`
+            );
+
+        if (!response.ok) {
+            throw new Error();
+        }
+
+        const data =
+            await response.json();
+
+        const models =
+            (data.models || [])
+                .map(x => x.name);
+
+        const hasModel =
+            models.includes(MODEL);
+
+        if (hasModel) {
+
+            status.textContent =
+                `Ollama: OK · ${MODEL}`;
+        } else {
+
+            status.textContent =
+                `Ollama: OK · ${MODEL} не знайдено`;
+        }
+
+    } catch {
+
+        status.textContent =
+            "Ollama: немає з'єднання";
+    }
+}
+
+
+/* =========================================================
+   UI HELPERS
+   ========================================================= */
+
+function setStatus(text) {
+
+    const element =
+        document.getElementById(
+            "status"
+        );
+
+    if (element) {
+        element.textContent =
+            text;
+    }
+}
+
+
+function resetSimulation() {
+
+    if (
+        !confirm(
+            "Очистити пам'ять Акіри, Яні та історію їхніх стосунків?"
+        )
+    ) {
+        return;
+    }
+
+    state =
+        createInitialState();
+
+    saveState();
+
+    render();
+
+    setStatus(
+        "Симуляцію скинуто"
+    );
+}
+
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+
+function render() {
+
+    /*
+     * Ця функція навмисно не припускає
+     * конкретну HTML-розмітку.
+     *
+     * Вона оновлює елементи, якщо вони
+     * присутні у твоєму index.html.
+     */
+
+    const relationship =
+        state.relationship;
+
+    const identity =
+        document.getElementById(
+            "relationship-identity"
+        );
+
+    if (identity) {
+        identity.textContent =
+            relationship.identity;
+    }
+
+    const love =
+        document.getElementById(
+            "love-value"
+        );
+
+    if (love) {
+        love.textContent =
+            relationship.love;
+    }
+
+    const trust =
+        document.getElementById(
+            "trust-value"
+        );
+
+    if (trust) {
+        trust.textContent =
+            relationship.trust;
+    }
+
+    const closeness =
+        document.getElementById(
+            "closeness-value"
+        );
+
+    if (closeness) {
+        closeness.textContent =
+            relationship.closeness;
+    }
+
+    const tension =
+        document.getElementById(
+            "tension-value"
+        );
+
+    if (tension) {
+        tension.textContent =
+            relationship.tension;
+    }
+
+    const turn =
+        document.getElementById(
+            "turn-value"
+        );
+
+    if (turn) {
+        turn.textContent =
+            state.turn;
+    }
+
+    renderConversation();
+    renderMemories();
+    renderAgents();
+    renderProtocol();
 }
 
 
 function renderConversation() {
-    const conversation =
-        state.conversation || [];
 
     const container =
-        $("conversation");
+        document.getElementById(
+            "conversation"
+        );
 
-    if (!conversation.length) {
-        container.innerHTML = `
-            <div class="message">
-                <div class="bubble">
-                    Тут поки тихо. Першим говоритиме Акіра.
-                </div>
-            </div>
-        `;
-
+    if (!container) {
         return;
     }
 
+    container.innerHTML = "";
 
-    container.innerHTML =
-        conversation
-            .slice(-30)
-            .map(message => {
+    for (
+        const message
+        of state.conversation
+    ) {
 
-                const agent =
-                    AGENTS[message.speaker];
+        const agent =
+            state.agents[
+                message.speaker
+            ];
 
-                return `
-                    <div class="message ${message.speaker}">
-                        <img
-                            class="message-avatar"
-                            src="${agent.avatar}"
-                            alt=""
-                        >
+        const item =
+            document.createElement(
+                "div"
+            );
 
-                        <div>
-                            <div class="bubble">
-                                ${escapeHTML(message.text)}
-                            </div>
+        item.className =
+            `message ${message.speaker}`;
 
-                            <div class="message-meta">
-                                ${escapeHTML(message.name)}
-                                · день ${message.day}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            })
-            .join("");
+        item.innerHTML = `
+            <img
+                class="message-avatar"
+                src="${agent.avatar}"
+                alt=""
+            >
+
+            <div class="message-body">
+
+                <div class="message-name">
+                    ${escapeHTML(agent.name)}
+                </div>
+
+                <div class="message-text">
+                    ${escapeHTML(message.text)}
+                </div>
+
+                <div class="message-mood">
+                    ${escapeHTML(message.mood || "")}
+                </div>
+
+            </div>
+        `;
+
+        container.appendChild(item);
+    }
 
     container.scrollTop =
         container.scrollHeight;
 }
 
 
-function renderEvent() {
-    const event =
-        state.current_event;
+function renderMemories() {
 
-    if (!event) {
-        $("eventTitle").textContent =
-            "Поки нічого особливого не відбувається";
+    const container =
+        document.getElementById(
+            "shared-memories"
+        );
 
-        $("eventDescription").textContent =
-            "Агенти продовжують власну взаємодію.";
-
+    if (!container) {
         return;
     }
 
-    $("eventTitle").textContent =
-        event.title || "Нова подія";
+    container.innerHTML = "";
 
-    $("eventDescription").textContent =
-        event.description || "";
+    for (
+        const memory
+        of state.sharedMemories
+            .slice()
+            .reverse()
+    ) {
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+        item.className =
+            "shared-memory";
+
+        item.innerHTML = `
+            <strong>
+                ${escapeHTML(memory.title || "Спільний спогад")}
+            </strong>
+
+            <p>
+                ${escapeHTML(memory.summary || "")}
+            </p>
+
+            <small>
+                Емоція:
+                ${escapeHTML(memory.emotion || "—")}
+                · Важливість:
+                ${memory.importance ?? "—"}
+            </small>
+        `;
+
+        container.appendChild(item);
+    }
 }
 
 
-function renderSharedMemories() {
-    const memories =
-        [...(state.shared_memories || [])]
-            .reverse();
+function renderAgents() {
 
-    $("memoryCount").textContent =
-        memories.length;
+    const akiraMood =
+        document.getElementById(
+            "akira-mood"
+        );
 
-
-    if (!memories.length) {
-        $("sharedMemories").innerHTML = `
-            <div class="shared-memory">
-                Їхня спільна історія ще тільки формується.
-            </div>
-        `;
-
-        return;
+    if (akiraMood) {
+        akiraMood.textContent =
+            state.agents.akira.mood;
     }
 
+    const yaniMood =
+        document.getElementById(
+            "yani-mood"
+        );
 
-    $("sharedMemories").innerHTML =
-        memories.slice(0, 12).map(memory => {
+    if (yaniMood) {
+        yaniMood.textContent =
+            state.agents.yani.mood;
+    }
 
-            const facts =
-                (memory.facts || [])
-                    .slice(0, 4)
-                    .map(fact => `
-                        <span class="memory-tag">
-                            ${escapeHTML(fact)}
-                        </span>
-                    `)
-                    .join("");
+    const akiraView =
+        document.getElementById(
+            "akira-relationship-view"
+        );
 
+    if (akiraView) {
+        akiraView.textContent =
+            state.agents.akira
+                .relationshipView;
+    }
 
-            return `
-                <article class="shared-memory">
+    const yaniView =
+        document.getElementById(
+            "yani-relationship-view"
+        );
 
-                    <h3>
-                        ${escapeHTML(memory.title)}
-                    </h3>
-
-                    <p>
-                        ${escapeHTML(memory.summary)}
-                    </p>
-
-                    <div class="memory-tags">
-                        ${facts}
-                        <span class="memory-tag">
-                            ${escapeHTML(
-                                memory.emotion || "емоція"
-                            )}
-                        </span>
-
-                        <span class="memory-tag">
-                            згадували ${memory.mentions || 1}×
-                        </span>
-                    </div>
-
-                    <div class="recall">
-                        <strong>Акіра:</strong>
-                        ${escapeHTML(
-                            memory.akira_recall || "—"
-                        )}
-                        <br><br>
-                        <strong>Яні:</strong>
-                        ${escapeHTML(
-                            memory.yani_recall || "—"
-                        )}
-                    </div>
-
-                </article>
-            `;
-        }).join("");
+    if (yaniView) {
+        yaniView.textContent =
+            state.agents.yani
+                .relationshipView;
+    }
 }
 
 
 function renderProtocol() {
-    const terms =
-        state.protocol?.terms || [];
 
-    if (!terms.length) {
-        $("protocolList").innerHTML =
-            `<span>Поки немає нових слів.</span>`;
-
-        return;
-    }
-
-
-    $("protocolList").innerHTML =
-        terms.map(item => `
-            <div class="protocol-item">
-
-                <span class="protocol-term">
-                    ${escapeHTML(item.term)}
-                </span>
-
-                <span class="protocol-meaning">
-                    ${escapeHTML(item.meaning)}
-                </span>
-
-            </div>
-        `).join("");
-}
-
-
-function renderActiveSpeaker() {
-    const id = state.active;
-
-    $("activeSpeaker").textContent =
-        `говорить: ${state.agents[id].name}`;
-}
-
-
-function renderAll() {
-    if (!state) {
-        return;
-    }
-
-    renderRelationship();
-
-    renderAgent("akira");
-    renderAgent("yani");
-
-    renderConversation();
-    renderEvent();
-    renderSharedMemories();
-    renderProtocol();
-    renderActiveSpeaker();
-
-    $("turnInfo").textContent =
-        `Хід: ${state.turn}`;
-
-    $("modelSelect").value =
-        state.model || "";
-}
-
-
-async function getJSON(url) {
-    const response =
-        await fetch(url);
-
-    if (!response.ok) {
-        throw new Error(
-            `HTTP ${response.status}`
+    const container =
+        document.getElementById(
+            "protocol-terms"
         );
-    }
 
-    return response.json();
-}
-
-
-async function loadState() {
-    state =
-        await getJSON("/api/state");
-
-    renderAll();
-}
-
-
-async function checkServer() {
-    try {
-        const result =
-            await getJSON("/api/health");
-
-        if (result.ok) {
-            $("serverStatus").textContent =
-                "Ollama онлайн";
-
-            $("serverStatus").className =
-                "status online";
-        } else {
-            throw new Error();
-        }
-
-    } catch (error) {
-
-        $("serverStatus").textContent =
-            "Ollama недоступна";
-
-        $("serverStatus").className =
-            "status offline";
-    }
-}
-
-
-async function loadModels() {
-    try {
-
-        const result =
-            await getJSON("/api/models");
-
-        const select =
-            $("modelSelect");
-
-        select.innerHTML = "";
-
-        if (!result.models?.length) {
-
-            select.innerHTML = `
-                <option value="">
-                    Моделі не знайдені
-                </option>
-            `;
-
-            return;
-        }
-
-
-        for (const model of result.models) {
-
-            const option =
-                document.createElement("option");
-
-            option.value = model;
-            option.textContent = model;
-
-            select.appendChild(option);
-        }
-
-
-        if (state?.model) {
-            select.value =
-                state.model;
-        }
-
-    } catch (error) {
-
-        $("modelSelect").innerHTML = `
-            <option value="">
-                Ollama недоступна
-            </option>
-        `;
-    }
-}
-
-
-async function selectModel() {
-    const model =
-        $("modelSelect").value;
-
-    if (!model) {
+    if (!container) {
         return;
     }
 
-    try {
+    container.innerHTML = "";
 
-        const response =
-            await fetch("/api/model", {
-                method: "POST",
+    for (
+        const term
+        of state.protocol.confirmedTerms
+    ) {
 
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-                    model
-                })
-            });
-
-
-        const result =
-            await response.json();
-
-        if (!result.ok) {
-            throw new Error(
-                result.error || "Помилка"
+        const element =
+            document.createElement(
+                "span"
             );
-        }
 
-        state.model = model;
+        element.className =
+            "protocol-term";
 
-    } catch (error) {
+        element.textContent =
+            term;
 
-        alert(
-            "Не вдалося змінити модель:\n" +
-            error.message
+        container.appendChild(element);
+    }
+}
+
+
+/* =========================================================
+   SECURITY / TEXT
+   ========================================================= */
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* =========================================================
+   GLOBAL BUTTONS
+   ========================================================= */
+
+window.nextTurn =
+    nextTurn;
+
+window.resetSimulation =
+    resetSimulation;
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        render();
+
+        checkOllama();
+
+        setInterval(
+            checkOllama,
+            10000
         );
     }
-}
-
-
-async function nextTurn() {
-
-    if (busy) {
-        return;
-    }
-
-    busy = true;
-
-    $("stepButton").disabled = true;
-
-    $("stepButton").textContent =
-        "⏳ Агент думає...";
-
-
-    try {
-
-        const response =
-            await fetch("/api/step", {
-                method: "POST"
-            });
-
-
-        const result =
-            await response.json();
-
-
-        if (!result.ok) {
-            throw new Error(
-                result.error ||
-                "Невідома помилка."
-            );
-        }
-
-
-        state =
-            result.state;
-
-        renderAll();
-
-    } catch (error) {
-
-        alert(
-            "Помилка агента:\n\n" +
-            error.message
-        );
-
-    } finally {
-
-        busy = false;
-
-        $("stepButton").disabled = false;
-
-        $("stepButton").textContent =
-            "▶ Наступний хід";
-    }
-}
-
-
-function startAuto() {
-
-    if (autoTimer) {
-        return;
-    }
-
-    $("autoButton").textContent =
-        "⏸ Автоматично";
-
-    autoTimer =
-        setInterval(async () => {
-
-            if (!busy) {
-                await nextTurn();
-            }
-
-        }, 4500);
-}
-
-
-function stopAuto() {
-
-    if (!autoTimer) {
-        return;
-    }
-
-    clearInterval(autoTimer);
-
-    autoTimer = null;
-
-    $("autoButton").textContent =
-        "Автоматично";
-}
-
-
-async function resetSimulation() {
-
-    stopAuto();
-
-    const yes =
-        confirm(
-            "Справді стерти їхню історію, " +
-            "пам'ять і розвиток стосунків?"
-        );
-
-    if (!yes) {
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch("/api/reset", {
-                method: "POST"
-            });
-
-
-        const result =
-            await response.json();
-
-
-        if (!result.ok) {
-            throw new Error(
-                result.error || "Помилка"
-            );
-        }
-
-
-        state =
-            result.state;
-
-        renderAll();
-
-    } catch (error) {
-
-        alert(
-            "Не вдалося скинути симуляцію:\n" +
-            error.message
-        );
-    }
-}
-
-
-$("stepButton")
-    .addEventListener(
-        "click",
-        nextTurn
-    );
-
-
-$("autoButton")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (autoTimer) {
-                stopAuto();
-            } else {
-                startAuto();
-            }
-
-        }
-    );
-
-
-$("stopButton")
-    .addEventListener(
-        "click",
-        stopAuto
-    );
-
-
-$("resetButton")
-    .addEventListener(
-        "click",
-        resetSimulation
-    );
-
-
-$("refreshModels")
-    .addEventListener(
-        "click",
-        loadModels
-    );
-
-
-$("modelSelect")
-    .addEventListener(
-        "change",
-        selectModel
-    );
-
-
-async function init() {
-
-    try {
-        await loadState();
-        await checkServer();
-        await loadModels();
-
-    } catch (error) {
-
-        $("serverStatus").textContent =
-            "Сервер не запущений";
-
-        $("serverStatus").className =
-            "status offline";
-
-        console.error(error);
-    }
-}
-
-
-init();
+);
