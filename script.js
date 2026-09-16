@@ -67,7 +67,7 @@ function createInitialState() {
 
                 gender: "жінка",
 
-                species: "людиноподібна кішка",
+                species: "звіролюдина",
 
                 avatar: YANI_AVATAR,
 
