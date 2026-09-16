@@ -1,1423 +1,1519 @@
-(() => {
-    "use strict";
+const SMALL_LLM_MODEL_BASE =
+    "https://huggingface.co/onnx-community/SmolLM2-135M-Instruct-ONNX/resolve/main/";
 
-    /*
-     * AI Couple Lab — SmallLLM
-     *
-     * Тут реалізований:
-     * - завантаження config/tokenizer/ONNX;
-     * - аналіз Llama graph;
-     * - декодування MatMulNBits;
-     * - базові Llama primitives;
-     * - підготовка реального forward pass.
-     *
-     * Важливо:
-     * ми НЕ використовуємо ONNX Runtime.
-     * Увесь inference залишається в браузері.
-     */
+const SMALL_LLM_MODEL_URL =
+    SMALL_LLM_MODEL_BASE + "onnx/model_q4f16.onnx";
 
-    const SMALL_LLM_MODEL_BASE =
-        "https://huggingface.co/onnx-community/SmolLM2-135M-Instruct-ONNX/resolve/main/";
+const SMALL_LLM_TOKENIZER_URL =
+    SMALL_LLM_MODEL_BASE + "tokenizer.json";
 
-    const SMALL_LLM_MODEL_URL =
-        SMALL_LLM_MODEL_BASE +
-        "onnx/model_q4f16.onnx";
-
-    const SMALL_LLM_TOKENIZER_URL =
-        SMALL_LLM_MODEL_BASE +
-        "tokenizer.json";
-
-    const SMALL_LLM_CONFIG_URL =
-        SMALL_LLM_MODEL_BASE +
-        "config.json";
+const SMALL_LLM_CONFIG_URL =
+    SMALL_LLM_MODEL_BASE + "config.json";
 
 
-    class SmallLLM {
+class SmallLLM {
 
-        constructor() {
+    constructor() {
 
-            this.model = null;
-            this.config = null;
-            this.tokenizer = null;
+        this.model = null;
+        this.tokenizer = null;
+        this.config = null;
 
-            this.loaded = false;
-            this.ready = false;
+        this.ready = false;
+        this.forwardReady = false;
 
-            this.weights = new Map();
+        this.quantizedLayers = [];
+        this.firstQMatMul = null;
 
-            this.configLoaded = false;
-            this.tokenizerLoaded = false;
-            this.modelLoaded = false;
-
-            console.log("[AI] SmallLLM створено.");
-        }
+        console.log("[AI] SmallLLM створено.");
+    }
 
 
-        async load() {
+    async load() {
 
-            console.log("[AI] Починаю завантаження...");
+        console.log("[AI] Починаю завантаження...");
+
+        try {
 
             await this._loadConfig();
+
             await this._loadTokenizer();
+
             await this._loadONNX();
 
             this._inspectArchitecture();
 
-            this.loaded = true;
+            this._prepareForward();
 
-            /*
-             * Forward буде активований тільки після того,
-             * як структура реальних MatMulNBits перевірена.
-             */
+            this.ready = true;
 
-            this.ready = this._prepareForward();
-
-            console.log(
-                "[AI] SmallLLM завантажений."
-            );
-
+            console.log("[AI] SmallLLM завантажений.");
             console.log(
                 "[AI] Forward:",
-                this.ready ? "готовий" : "не готовий"
+                this.forwardReady ? "готовий" : "не готовий"
             );
 
-            return this;
+            return true;
+
+        } catch (error) {
+
+            console.error(
+                "[AI] Помилка завантаження:",
+                error
+            );
+
+            this.ready = false;
+
+            return false;
         }
+    }
 
 
-        async _loadConfig() {
+    async _loadConfig() {
 
-            const response =
-                await fetch(
-                    SMALL_LLM_CONFIG_URL
-                );
+        const response =
+            await fetch(SMALL_LLM_CONFIG_URL);
 
-            if (!response.ok) {
-                throw new Error(
-                    `Config HTTP ${response.status}`
-                );
-            }
+        if (!response.ok) {
 
-            this.config =
-                await response.json();
-
-            this.configLoaded = true;
-
-            console.log(
-                "[AI] Config:",
-                this.config
+            throw new Error(
+                `Config HTTP ${response.status}`
             );
         }
 
+        this.config =
+            await response.json();
 
-        async _loadTokenizer() {
+        console.log(
+            "[AI] Config:",
+            this.config
+        );
+    }
 
-            /*
-             * Не припускаємо конкретну назву класу.
-             *
-             * У твоєму tokenizer.js клас може називатися
-             * Tokenizer або GPT2Tokenizer.
-             */
 
-            let TokenizerClass =
-                window.Tokenizer ||
-                window.GPT2Tokenizer ||
-                window.ByteLevelTokenizer;
+    async _loadTokenizer() {
 
-            if (!TokenizerClass) {
+        const TokenizerClass =
+            window.Tokenizer ||
+            window.GPT2Tokenizer ||
+            window.ByteLevelTokenizer;
 
-                console.warn(
-                    "[AI] Tokenizer class не знайдений."
-                );
+        if (!TokenizerClass) {
 
-                /*
-                 * Це поки НЕ валимо.
-                 *
-                 * Модель можна дослідити незалежно
-                 * від tokenizer.
-                 */
+            console.warn(
+                "[AI] Tokenizer class не знайдений."
+            );
 
-                return;
-            }
+            this.tokenizer = null;
+
+            return;
+        }
+
+        try {
 
             const response =
-                await fetch(
-                    SMALL_LLM_TOKENIZER_URL
-                );
+                await fetch(SMALL_LLM_TOKENIZER_URL);
 
             if (!response.ok) {
+
                 throw new Error(
                     `Tokenizer HTTP ${response.status}`
                 );
             }
 
-            const tokenizerJSON =
+            const data =
                 await response.json();
 
-            /*
-             * Підтримуємо кілька можливих API.
-             */
+            this.tokenizer =
+                new TokenizerClass(data);
+
+            console.log(
+                "[AI] Tokenizer завантажений."
+            );
+
+        } catch (error) {
+
+            console.warn(
+                "[AI] Tokenizer не завантажився:",
+                error
+            );
+
+            this.tokenizer = null;
+        }
+    }
+
+
+    async _loadONNX() {
+
+        if (!window.ONNXModel) {
+
+            throw new Error(
+                "ONNXModel не знайдений."
+            );
+        }
+
+        console.log(
+            "[ONNX] Завантаження:",
+            SMALL_LLM_MODEL_URL
+        );
+
+        this.model =
+            new window.ONNXModel();
+
+        await this.model.load(
+            SMALL_LLM_MODEL_URL
+        );
+
+        console.log(
+            "[AI] ONNX модель завантажена."
+        );
+    }
+
+
+    _inspectArchitecture() {
+
+        const c = this.config || {};
+
+        console.log(
+            "[AI] Архітектура SmolLM2"
+        );
+
+        console.log(
+            "model_type:",
+            c.model_type
+        );
+
+        console.log(
+            "hidden_size:",
+            c.hidden_size
+        );
+
+        console.log(
+            "intermediate_size:",
+            c.intermediate_size
+        );
+
+        console.log(
+            "layers:",
+            c.num_hidden_layers
+        );
+
+        console.log(
+            "attention heads:",
+            c.num_attention_heads
+        );
+
+        console.log(
+            "KV heads:",
+            c.num_key_value_heads
+        );
+
+        console.log(
+            "head_dim:",
+            c.head_dim
+        );
+
+        console.log(
+            "vocab:",
+            c.vocab_size
+        );
+
+        console.log(
+            "rope_theta:",
+            c.rope_theta
+        );
+
+
+        if (this.model.inspectOperators) {
 
             try {
 
-                this.tokenizer =
-                    new TokenizerClass(
-                        tokenizerJSON
-                    );
+                console.log(
+                    "[AI] Operator counts:",
+                    this.model.inspectOperators()
+                );
 
-            } catch (e) {
+            } catch (error) {
 
                 console.warn(
-                    "[AI] Не вдалося створити Tokenizer:",
-                    e
+                    "[AI] Не вдалося отримати operator counts:",
+                    error
                 );
-
-                try {
-
-                    this.tokenizer =
-                        new TokenizerClass();
-
-                    if (
-                        typeof this.tokenizer.loadJSON ===
-                        "function"
-                    ) {
-                        await this.tokenizer.loadJSON(
-                            tokenizerJSON
-                        );
-                    }
-
-                } catch (e2) {
-
-                    console.warn(
-                        "[AI] Другий варіант Tokenizer також не спрацював:",
-                        e2
-                    );
-
-                    this.tokenizer = null;
-                }
             }
+        }
 
-            if (this.tokenizer) {
-                this.tokenizerLoaded = true;
+
+        if (this.model.inspectMatMulNBits) {
+
+            try {
+
+                const q =
+                    this.model.inspectMatMulNBits();
 
                 console.log(
-                    "[AI] Tokenizer готовий:",
-                    this.tokenizer.constructor.name
+                    "[AI] MatMulNBits:",
+                    q
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "[AI] MatMulNBits inspection error:",
+                    error
                 );
             }
         }
+    }
 
 
-        async _loadONNX() {
+    _getAttribute(node, name, fallback = null) {
 
-            if (
-                typeof window.ONNXModel !==
-                "function"
-            ) {
-                throw new Error(
-                    "ONNXModel не знайдений. Перевір ai/onnx.js"
-                );
-            }
-
-            this.model =
-                new window.ONNXModel();
-
-            await this.model.load(
-                SMALL_LLM_MODEL_URL
-            );
-
-            this.modelLoaded = true;
-
-            console.log(
-                "[AI] ONNX модель завантажена."
-            );
+        if (!node || !node.attributes) {
+            return fallback;
         }
 
-
-        _inspectArchitecture() {
-
-            const c = this.config;
-
-            console.group(
-                "[AI] Архітектура SmolLM2"
+        const attr =
+            node.attributes.find(
+                a => a.name === name
             );
 
-            console.log(
-                "model_type:",
-                c.model_type
-            );
-
-            console.log(
-                "hidden_size:",
-                c.hidden_size
-            );
-
-            console.log(
-                "intermediate_size:",
-                c.intermediate_size
-            );
-
-            console.log(
-                "layers:",
-                c.num_hidden_layers
-            );
-
-            console.log(
-                "attention heads:",
-                c.num_attention_heads
-            );
-
-            console.log(
-                "KV heads:",
-                c.num_key_value_heads
-            );
-
-            console.log(
-                "head_dim:",
-                c.head_dim
-            );
-
-            console.log(
-                "vocab:",
-                c.vocab_size
-            );
-
-            console.log(
-                "rope_theta:",
-                c.rope_theta
-            );
-
-            console.groupEnd();
-
-            if (
-                this.model &&
-                typeof this.model.inspectOperators ===
-                "function"
-            ) {
-                this.model.inspectOperators();
-            }
-
-            if (
-                this.model &&
-                typeof this.model.inspectMatMulNBits ===
-                "function"
-            ) {
-                this.model.inspectMatMulNBits();
-            }
+        if (!attr) {
+            return fallback;
         }
 
+        if (attr.i !== undefined) {
+            return Number(attr.i);
+        }
 
-        /*
-         * ---------------------------------------------------------
-         * MatMulNBits
-         * ---------------------------------------------------------
-         *
-         * Формат ONNX Runtime:
-         *
-         * B:
-         *   [N, blocks, blob_size]
-         *
-         * де:
-         *
-         * blob_size = block_size * bits / 8
-         *
-         * Для Q4:
-         *
-         * 2 ваги / byte.
-         *
-         * Нижні 4 біти = перше значення.
-         * Верхні 4 біти = друге.
-         *
-         * Zero point може бути packed.
-         */
+        if (attr.f !== undefined) {
+            return Number(attr.f);
+        }
+
+        if (attr.s !== undefined) {
+            return attr.s;
+        }
+
+        return fallback;
+    }
 
 
-        _getAttribute(node, name) {
+    /*
+     * ВАЖЛИВА ВИПРАВЛЕНА ФУНКЦІЯ
+     *
+     * ONNX rawData може бути Uint8Array
+     * з byteOffset, який не кратний 2 або 4.
+     *
+     * Тому спочатку створюємо НОВИЙ
+     * вирівняний Uint8Array, а вже потім
+     * читаємо Float32 / Float16 / Uint16.
+     */
+    _readRawTensor(tensor) {
 
-            if (!node || !node.attributes) {
-                return null;
-            }
-
-            const attr =
-                node.attributes.find(
-                    x => x.name === name
-                );
-
-            if (!attr) {
-                return null;
-            }
-
-            if (attr.i !== null) {
-                return Number(attr.i);
-            }
-
-            if (attr.f !== null) {
-                return attr.f;
-            }
-
+        if (!tensor) {
             return null;
         }
 
 
-        _readRawTensor(tensor) {
+        if (tensor.rawData) {
 
-            if (!tensor) {
-                return null;
-            }
+            const source =
+                tensor.rawData;
 
-            if (!tensor.rawData) {
-
-                if (
-                    tensor.floatData &&
-                    tensor.floatData.length
-                ) {
-                    return new Float32Array(
-                        tensor.floatData
-                    );
-                }
-
-                if (
-                    tensor.int32Data &&
-                    tensor.int32Data.length
-                ) {
-                    return new Int32Array(
-                        tensor.int32Data
-                    );
-                }
-
-                return null;
-            }
 
             const bytes =
-                tensor.rawData;
+                new Uint8Array(
+                    source.byteLength
+                );
+
+
+            bytes.set(source);
+
 
             switch (tensor.dataType) {
 
-                /*
-                 * FLOAT
-                 */
+
+                // FLOAT
                 case 1: {
 
+                    if (
+                        bytes.byteLength % 4 !== 0
+                    ) {
+
+                        throw new Error(
+                            `FLOAT tensor має неправильний розмір: ${bytes.byteLength}`
+                        );
+                    }
+
                     return new Float32Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        Math.floor(
-                            bytes.byteLength / 4
-                        )
+                        bytes.buffer
                     );
                 }
 
 
-                /*
-                 * UINT8
-                 */
+                // UINT8
                 case 2:
 
                     return new Uint8Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        bytes.byteLength
+                        bytes.buffer
                     );
 
 
-                /*
-                 * INT8
-                 */
+                // INT8
                 case 3:
 
                     return new Int8Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        bytes.byteLength
+                        bytes.buffer
                     );
 
 
-                /*
-                 * FLOAT16
-                 */
-                case 10:
+                // UINT16
+                case 4: {
+
+                    if (
+                        bytes.byteLength % 2 !== 0
+                    ) {
+
+                        throw new Error(
+                            `UINT16 tensor має непарний розмір: ${bytes.byteLength}`
+                        );
+                    }
 
                     return new Uint16Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        Math.floor(
-                            bytes.byteLength / 2
-                        )
+                        bytes.buffer
                     );
+                }
 
 
-                /*
-                 * UINT16
-                 */
-                case 4:
+                // FLOAT16
+                case 10: {
+
+                    if (
+                        bytes.byteLength % 2 !== 0
+                    ) {
+
+                        throw new Error(
+                            `FLOAT16 tensor має непарний розмір: ${bytes.byteLength}`
+                        );
+                    }
 
                     return new Uint16Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        Math.floor(
-                            bytes.byteLength / 2
-                        )
+                        bytes.buffer
                     );
+                }
 
 
                 default:
 
-                    return new Uint8Array(
-                        bytes.buffer,
-                        bytes.byteOffset,
-                        bytes.byteLength
+                    console.warn(
+                        "[AI] Невідомий ONNX dataType:",
+                        tensor.dataType
                     );
+
+                    return bytes;
             }
         }
 
 
-        _float16(value) {
+        if (
+            tensor.floatData &&
+            tensor.floatData.length
+        ) {
+
+            return new Float32Array(
+                tensor.floatData
+            );
+        }
+
+
+        if (
+            tensor.int32Data &&
+            tensor.int32Data.length
+        ) {
+
+            return new Int32Array(
+                tensor.int32Data
+            );
+        }
+
+
+        if (
+            tensor.int64Data &&
+            tensor.int64Data.length
+        ) {
 
             if (
-                typeof window.float16ToFloat32 ===
-                "function"
+                typeof BigInt64Array !==
+                "undefined"
             ) {
-                return window.float16ToFloat32(
-                    value
+
+                return new BigInt64Array(
+                    tensor.int64Data
                 );
             }
 
-            const sign =
-                (value & 0x8000)
-                    ? -1
-                    : 1;
+            return tensor.int64Data;
+        }
 
-            const exponent =
-                (value >> 10) & 0x1f;
 
-            const fraction =
-                value & 0x03ff;
+        if (
+            tensor.uint64Data &&
+            tensor.uint64Data.length
+        ) {
 
-            if (exponent === 0) {
+            if (
+                typeof BigUint64Array !==
+                "undefined"
+            ) {
 
-                if (fraction === 0) {
-                    return 0;
-                }
-
-                return (
-                    sign *
-                    Math.pow(2, -14) *
-                    (fraction / 1024)
+                return new BigUint64Array(
+                    tensor.uint64Data
                 );
             }
 
-            if (exponent === 31) {
+            return tensor.uint64Data;
+        }
 
-                if (fraction === 0) {
-                    return sign * Infinity;
-                }
 
-                return NaN;
+        return null;
+    }
+
+
+    _float16(value) {
+
+        const h =
+            Number(value) & 0xffff;
+
+        const sign =
+            (h & 0x8000)
+                ? -1
+                : 1;
+
+        const exponent =
+            (h >> 10) & 0x1f;
+
+        const fraction =
+            h & 0x03ff;
+
+
+        if (exponent === 0) {
+
+            if (fraction === 0) {
+                return sign * 0;
             }
 
             return (
                 sign *
-                Math.pow(
-                    2,
-                    exponent - 15
-                ) *
-                (1 + fraction / 1024)
+                Math.pow(2, -14) *
+                (fraction / 1024)
             );
         }
 
 
-        _unpackQ4(byte) {
+        if (exponent === 31) {
 
-            return [
-                byte & 0x0f,
-                (byte >> 4) & 0x0f
+            if (fraction === 0) {
+                return sign * Infinity;
+            }
+
+            return NaN;
+        }
+
+
+        return (
+            sign *
+            Math.pow(
+                2,
+                exponent - 15
+            ) *
+            (1 + fraction / 1024)
+        );
+    }
+
+
+    _unpackQ4(byte, high) {
+
+        if (!high) {
+
+            return byte & 0x0f;
+        }
+
+        return (
+            (byte >> 4) & 0x0f
+        );
+    }
+
+
+    _getPackedZeroPoint(
+        zeroPoints,
+        index
+    ) {
+
+        if (!zeroPoints) {
+            return 8;
+        }
+
+
+        const byte =
+            zeroPoints[
+                Math.floor(index / 2)
             ];
+
+
+        if (byte === undefined) {
+            return 8;
         }
 
 
-        /*
-         * Читання packed zero point.
-         *
-         * Для Q4:
-         * 2 zero points на byte.
-         */
+        const high =
+            (index & 1) !== 0;
 
-        _getPackedZeroPoint(
-            zeroPoints,
-            index,
-            bits
-        ) {
 
-            if (!zeroPoints) {
+        return this._unpackQ4(
+            byte,
+            high
+        );
+    }
 
-                /*
-                 * Для unsigned Q4 без явного zero point
-                 * ONNX Runtime використовує 8.
-                 */
 
-                return Math.pow(
-                    2,
-                    bits - 1
-                );
-            }
+    _dequantizeMatMulNBits(node) {
 
-            const perByte =
-                Math.floor(8 / bits);
+        if (!node) {
 
-            const byteIndex =
-                Math.floor(
-                    index / perByte
-                );
-
-            const subIndex =
-                index % perByte;
-
-            const byte =
-                zeroPoints[byteIndex];
-
-            const shift =
-                subIndex * bits;
-
-            const mask =
-                (1 << bits) - 1;
-
-            return (
-                byte >> shift
-            ) & mask;
+            throw new Error(
+                "MatMulNBits node не знайдений."
+            );
         }
 
 
-        /*
-         * Декодує одну колонку B.
-         *
-         * Важливо:
-         *
-         * MatMulNBits зберігає B як
-         *
-         * [N, blocks, packed K]
-         *
-         * а не як наш старий
-         * [rows, cols].
-         */
+        const inputs =
+            node.inputs || [];
 
 
-        _dequantizeMatMulNBits(
-            node
-        ) {
+        const weightName =
+            inputs[1];
 
-            const inputs =
-                node.inputs;
+        const scaleName =
+            inputs[2];
 
-            if (inputs.length < 3) {
-                throw new Error(
-                    "MatMulNBits має менше 3 inputs"
-                );
-            }
+        const zeroPointName =
+            inputs[3];
 
-            const b =
-                this.model.getInitializer(
-                    inputs[1]
-                );
 
-            const scales =
-                this.model.getInitializer(
-                    inputs[2]
-                );
-
-            const zeroPoints =
-                inputs.length >= 4
-                    ? this.model.getInitializer(
-                        inputs[3]
-                    )
-                    : null;
-
-            if (!b) {
-                throw new Error(
-                    `Не знайдений B initializer: ${inputs[1]}`
-                );
-            }
-
-            if (!scales) {
-                throw new Error(
-                    `Не знайдений scales initializer: ${inputs[2]}`
-                );
-            }
-
-            const K =
-                this._getAttribute(
-                    node,
-                    "K"
-                );
-
-            const N =
-                this._getAttribute(
-                    node,
-                    "N"
-                );
-
-            const bits =
-                this._getAttribute(
-                    node,
-                    "bits"
-                ) || 4;
-
-            const blockSize =
-                this._getAttribute(
-                    node,
-                    "block_size"
-                ) || 32;
-
-            const blocks =
-                Math.ceil(
-                    K / blockSize
-                );
-
-            const blobSize =
-                Math.ceil(
-                    blockSize * bits / 8
-                );
-
-            console.log(
-                "[AI] QMatMul:",
-                {
-                    name: node.name,
-                    K,
-                    N,
-                    bits,
-                    blockSize,
-                    blocks,
-                    blobSize,
-                    bShape: b.dims,
-                    scaleShape: scales.dims,
-                    zeroPointShape:
-                        zeroPoints
-                            ? zeroPoints.dims
-                            : null
-                }
+        const weightTensor =
+            this.model.getInitializer(
+                weightName
             );
 
-            const packed =
-                this._readRawTensor(
-                    b
-                );
 
-            const scaleRaw =
-                this._readRawTensor(
-                    scales
-                );
-
-            const zpRaw =
-                zeroPoints
-                    ? this._readRawTensor(
-                        zeroPoints
-                    )
-                    : null;
-
-            if (!packed) {
-                throw new Error(
-                    "Не вдалося прочитати packed B"
-                );
-            }
-
-            if (!scaleRaw) {
-                throw new Error(
-                    "Не вдалося прочитати scales"
-                );
-            }
-
-            /*
-             * Для q4f16 scales можуть бути FLOAT16.
-             */
-
-            const scalesFloat =
-                new Float32Array(
-                    scaleRaw.length
-                );
-
-            if (
-                scales.dataType === 10
-            ) {
-
-                for (
-                    let i = 0;
-                    i < scaleRaw.length;
-                    i++
-                ) {
-                    scalesFloat[i] =
-                        this._float16(
-                            scaleRaw[i]
-                        );
-                }
-
-            } else {
-
-                for (
-                    let i = 0;
-                    i < scaleRaw.length;
-                    i++
-                ) {
-                    scalesFloat[i] =
-                        scaleRaw[i];
-                }
-            }
+        const scaleTensor =
+            this.model.getInitializer(
+                scaleName
+            );
 
 
-            /*
-             * Декодована матриця:
-             *
-             * [N, K]
-             *
-             * Це поки діагностичний універсальний
-             * шлях. Він повільніший, зате дозволяє
-             * перевірити числову коректність.
-             */
-
-            const weights =
-                new Float32Array(
-                    N * K
-                );
+        const zeroPointTensor =
+            zeroPointName
+                ? this.model.getInitializer(
+                    zeroPointName
+                  )
+                : null;
 
 
-            for (
-                let n = 0;
-                n < N;
-                n++
-            ) {
+        if (!weightTensor) {
 
-                for (
-                    let block = 0;
-                    block < blocks;
-                    block++
-                ) {
-
-                    const scale =
-                        scalesFloat[
-                            n * blocks +
-                            block
-                        ];
-
-                    /*
-                     * zero point index:
-                     * один zp на блок/канал.
-                     */
-
-                    const zpIndex =
-                        n * blocks +
-                        block;
-
-                    const zeroPoint =
-                        this._getPackedZeroPoint(
-                            zpRaw,
-                            zpIndex,
-                            bits
-                        );
-
-                    const blockStart =
-                        block * blockSize;
-
-                    const blockLength =
-                        Math.min(
-                            blockSize,
-                            K - blockStart
-                        );
-
-                    /*
-                     * B має shape:
-                     *
-                     * [N, blocks, blobSize]
-                     */
-
-                    const packedBase =
-                        (
-                            n * blocks +
-                            block
-                        ) *
-                        blobSize;
+            throw new Error(
+                `Q4 weight не знайдений: ${weightName}`
+            );
+        }
 
 
-                    for (
-                        let kLocal = 0;
-                        kLocal < blockLength;
-                        kLocal++
-                    ) {
+        if (!scaleTensor) {
 
-                        const byteIndex =
-                            packedBase +
-                            Math.floor(
-                                kLocal *
-                                bits /
-                                8
-                            );
+            throw new Error(
+                `Q4 scale не знайдений: ${scaleName}`
+            );
+        }
 
-                        let q;
 
-                        if (bits === 4) {
+        const K =
+            this._getAttribute(
+                node,
+                "K",
+                null
+            );
 
-                            const byte =
-                                packed[
-                                    byteIndex
-                                ];
 
-                            if (
-                                (kLocal & 1) === 0
-                            ) {
-                                q =
-                                    byte & 0x0f;
-                            } else {
-                                q =
-                                    (
-                                        byte >> 4
-                                    ) & 0x0f;
-                            }
+        const N =
+            this._getAttribute(
+                node,
+                "N",
+                null
+            );
 
-                        } else {
 
-                            /*
-                             * Поки підтримуємо
-                             * саме Q4, бо наша модель
-                             * q4f16.
-                             */
+        const bits =
+            this._getAttribute(
+                node,
+                "bits",
+                4
+            );
 
-                            throw new Error(
-                                `Q${bits} поки не реалізований`
-                            );
-                        }
 
-                        const weight =
-                            (
-                                q -
-                                zeroPoint
-                            ) *
-                            scale;
+        const blockSize =
+            this._getAttribute(
+                node,
+                "block_size",
+                32
+            );
 
-                        weights[
-                            n * K +
-                            blockStart +
-                            kLocal
-                        ] = weight;
-                    }
-                }
-            }
 
-            return {
+        console.log(
+            "[AI] QMatMul:",
+            {
+                node: node.name,
                 K,
                 N,
                 bits,
                 blockSize,
-                weights
-            };
-        }
+                weight: weightName,
+                scale: scaleName,
+                zeroPoint: zeroPointName
+            }
+        );
 
 
-        /*
-         * Збираємо всі quantized linear layers.
-         */
-
-        _prepareQuantizedWeights() {
-
-            const nodes =
-                this.model.findNodesByOp(
-                    "MatMulNBits"
-                );
-
-            console.log(
-                "[AI] Quantized linear layers:",
-                nodes.length
+        const packedWeights =
+            this._readRawTensor(
+                weightTensor
             );
 
-            /*
-             * Поки НЕ декодуємо всі 30 шарів
-             * одразу — це може зайняти багато
-             * пам'яті в браузері.
-             *
-             * Зберігаємо node descriptions.
-             */
 
-            this.quantizedNodes =
-                nodes;
-
-            return nodes;
-        }
-
-
-        /*
-         * Перевірка структури першого MatMulNBits.
-         */
-
-        _prepareForward() {
-
-            try {
-
-                const nodes =
-                    this._prepareQuantizedWeights();
-
-                if (!nodes.length) {
-
-                    console.error(
-                        "[AI] У моделі немає MatMulNBits."
-                    );
-
-                    return false;
-                }
-
-                const first =
-                    nodes[0];
-
-                console.log(
-                    "[AI] Перший MatMulNBits:",
-                    {
-                        name: first.name,
-                        inputs: first.inputs,
-                        outputs: first.outputs,
-                        attributes:
-                            this.model.getNodeAttributes(
-                                first
-                            )
-                    }
-                );
-
-                /*
-                 * Важливий тест:
-                 * декодуємо ТІЛЬКИ перший шар.
-                 *
-                 * Якщо тут усе правильно —
-                 * переходимо до повного Llama forward.
-                 */
-
-                const test =
-                    this._dequantizeMatMulNBits(
-                        first
-                    );
-
-                console.log(
-                    "[AI] Перший Q4 tensor декодований:",
-                    {
-                        K: test.K,
-                        N: test.N,
-                        bits: test.bits,
-                        blockSize:
-                            test.blockSize,
-                        values:
-                            test.weights.length
-                    }
-                );
-
-                /*
-                 * Перевіряємо, що немає NaN/Infinity.
-                 */
-
-                let bad = 0;
-
-                let min = Infinity;
-                let max = -Infinity;
-
-                for (
-                    let i = 0;
-                    i < test.weights.length;
-                    i++
-                ) {
-
-                    const v =
-                        test.weights[i];
-
-                    if (!Number.isFinite(v)) {
-                        bad++;
-                        continue;
-                    }
-
-                    if (v < min) min = v;
-                    if (v > max) max = v;
-                }
-
-                console.log(
-                    "[AI] Q4 statistics:",
-                    {
-                        min,
-                        max,
-                        bad
-                    }
-                );
-
-                if (bad) {
-
-                    console.error(
-                        "[AI] Q4 tensor містить NaN/Infinity."
-                    );
-
-                    return false;
-                }
-
-                /*
-                 * Успішний тест low-level decoder.
-                 *
-                 * Повний Llama forward підключатимемо
-                 * після перевірки цього tensor.
-                 */
-
-                this.firstQ4Test =
-                    test;
-
-                return true;
-
-            } catch (error) {
-
-                console.error(
-                    "[AI] Q4 forward preparation error:",
-                    error
-                );
-
-                return false;
-            }
-        }
-
-
-        /*
-         * ---------------------------------------------------------
-         * Llama primitives
-         * ---------------------------------------------------------
-         */
-
-        rmsNorm(
-            input,
-            weight,
-            eps
-        ) {
-
-            const out =
-                new Float32Array(
-                    input.length
-                );
-
-            let sum = 0;
-
-            for (
-                let i = 0;
-                i < input.length;
-                i++
-            ) {
-                sum +=
-                    input[i] *
-                    input[i];
-            }
-
-            const inv =
-                1 /
-                Math.sqrt(
-                    sum /
-                    input.length +
-                    eps
-                );
-
-            for (
-                let i = 0;
-                i < input.length;
-                i++
-            ) {
-
-                out[i] =
-                    input[i] *
-                    inv *
-                    weight[i];
-            }
-
-            return out;
-        }
-
-
-        silu(
-            x
-        ) {
-
-            return (
-                x /
-                (
-                    1 +
-                    Math.exp(-x)
-                )
+        const scales =
+            this._readRawTensor(
+                scaleTensor
             );
-        }
 
 
-        softmax(
-            values
-        ) {
-
-            let max =
-                -Infinity;
-
-            for (
-                const v of values
-            ) {
-                if (v > max) {
-                    max = v;
-                }
-            }
-
-            const result =
-                new Float32Array(
-                    values.length
-                );
-
-            let sum = 0;
-
-            for (
-                let i = 0;
-                i < values.length;
-                i++
-            ) {
-
-                const e =
-                    Math.exp(
-                        values[i] -
-                        max
-                    );
-
-                result[i] = e;
-                sum += e;
-            }
-
-            if (sum === 0) {
-                return result;
-            }
-
-            for (
-                let i = 0;
-                i < result.length;
-                i++
-            ) {
-                result[i] /= sum;
-            }
-
-            return result;
-        }
+        const zeroPoints =
+            zeroPointTensor
+                ? this._readRawTensor(
+                    zeroPointTensor
+                  )
+                : null;
 
 
-        /*
-         * RoPE для head_dim=64.
-         *
-         * rope_interleaved=false:
-         * половини вектора обертаються парами.
-         */
-
-        applyRoPE(
-            vector,
-            position
-        ) {
-
-            const dim =
-                vector.length;
-
-            const half =
-                dim / 2;
-
-            const theta =
-                this.config.rope_theta ||
-                10000;
-
-            const out =
-                new Float32Array(
-                    vector
-                );
-
-            for (
-                let i = 0;
-                i < half;
-                i++
-            ) {
-
-                const exponent =
-                    (2 * i) /
-                    dim;
-
-                const freq =
-                    1 /
-                    Math.pow(
-                        theta,
-                        exponent
-                    );
-
-                const angle =
-                    position *
-                    freq;
-
-                const cos =
-                    Math.cos(angle);
-
-                const sin =
-                    Math.sin(angle);
-
-                const a =
-                    vector[i];
-
-                const b =
-                    vector[i + half];
-
-                out[i] =
-                    a * cos -
-                    b * sin;
-
-                out[i + half] =
-                    a * sin +
-                    b * cos;
-            }
-
-            return out;
-        }
-
-
-        dot(
-            a,
-            b
-        ) {
-
-            let sum = 0;
-
-            for (
-                let i = 0;
-                i < a.length;
-                i++
-            ) {
-
-                sum +=
-                    a[i] *
-                    b[i];
-            }
-
-            return sum;
-        }
-
-
-        /*
-         * Greedy вибір токена.
-         */
-
-        argmax(
-            logits
-        ) {
-
-            let best = 0;
-            let value = -Infinity;
-
-            for (
-                let i = 0;
-                i < logits.length;
-                i++
-            ) {
-
-                if (
-                    logits[i] >
-                    value
-                ) {
-
-                    value =
-                        logits[i];
-
-                    best = i;
-                }
-            }
-
-            return best;
-        }
-
-
-        /*
-         * ---------------------------------------------------------
-         * generate
-         * ---------------------------------------------------------
-         *
-         * Поки що цей метод НЕ підсовує фальшивий текст.
-         *
-         * Він перевіряє, що low-level Q4 forward
-         * реально готовий.
-         */
-
-        async generate(
-            prompt,
-            options = {}
-        ) {
-
-            if (!this.loaded) {
-                throw new Error(
-                    "SmallLLM ще не завантажений."
-                );
-            }
-
-            if (!this.ready) {
-                throw new Error(
-                    "Q4 forward не пройшов підготовчий тест."
-                );
-            }
-
-            if (!this.tokenizer) {
-
-                throw new Error(
-                    "Tokenizer не підключений."
-                );
-            }
-
-            /*
-             * Тут навмисно НЕ генеруємо вигаданий
-             * результат.
-             *
-             * Наступний етап — підключення embedding,
-             * 30 Llama blocks і lm_head.
-             */
+        if (!packedWeights) {
 
             throw new Error(
-                "Q4 decoder готовий. Повний Llama forward ще не підключений."
+                "Не вдалося прочитати Q4 weights."
+            );
+        }
+
+
+        if (!scales) {
+
+            throw new Error(
+                "Не вдалося прочитати Q4 scales."
+            );
+        }
+
+
+        const actualK =
+            K ||
+            (
+                weightTensor.dims &&
+                weightTensor.dims[1]
+            );
+
+
+        const actualN =
+            N ||
+            (
+                weightTensor.dims &&
+                weightTensor.dims[0]
+            );
+
+
+        const blocksPerRow =
+            Math.ceil(
+                actualK / blockSize
+            );
+
+
+        const valuesPerByte =
+            8 / bits;
+
+
+        const blobSize =
+            Math.ceil(
+                blockSize * bits / 8
+            );
+
+
+        console.log(
+            "[AI] Q4 layout:",
+            {
+                actualK,
+                actualN,
+                blockSize,
+                blocksPerRow,
+                valuesPerByte,
+                blobSize,
+
+                weightDims:
+                    weightTensor.dims,
+
+                scaleDims:
+                    scaleTensor.dims,
+
+                weightBytes:
+                    packedWeights.byteLength,
+
+                scaleValues:
+                    scales.length,
+
+                zeroPointBytes:
+                    zeroPoints
+                        ? zeroPoints.byteLength
+                        : 0
+            }
+        );
+
+
+        /*
+         * Декодуємо невеликий фрагмент,
+         * а не всю матрицю.
+         *
+         * Це потрібно для перевірки формату
+         * і не повинно споживати сотні MB RAM.
+         */
+
+        const sampleRows =
+            Math.min(
+                actualN,
+                4
+            );
+
+
+        const sampleCols =
+            Math.min(
+                actualK,
+                32
+            );
+
+
+        const sample =
+            new Float32Array(
+                sampleRows *
+                sampleCols
+            );
+
+
+        let minimum =
+            Infinity;
+
+        let maximum =
+            -Infinity;
+
+        let bad =
+            0;
+
+
+        for (
+            let row = 0;
+            row < sampleRows;
+            row++
+        ) {
+
+            for (
+                let col = 0;
+                col < sampleCols;
+                col++
+            ) {
+
+                const block =
+                    Math.floor(
+                        col / blockSize
+                    );
+
+
+                const inside =
+                    col % blockSize;
+
+
+                const scaleIndex =
+                    row *
+                    blocksPerRow +
+                    block;
+
+
+                const scaleRaw =
+                    scales[
+                        scaleIndex
+                    ];
+
+
+                const scale =
+                    this._float16(
+                        scaleRaw
+                    );
+
+
+                const packedIndex =
+                    row *
+                    blocksPerRow *
+                    blobSize +
+                    block *
+                    blobSize +
+                    Math.floor(
+                        inside /
+                        valuesPerByte
+                    );
+
+
+                const packed =
+                    packedWeights[
+                        packedIndex
+                    ];
+
+
+                if (
+                    packed === undefined
+                ) {
+
+                    bad++;
+
+                    continue;
+                }
+
+
+                let q;
+
+
+                if (bits === 4) {
+
+                    q =
+                        this._unpackQ4(
+                            packed,
+                            (
+                                inside & 1
+                            ) !== 0
+                        );
+
+                } else {
+
+                    q = 0;
+                }
+
+
+                let zero =
+                    8;
+
+
+                if (
+                    zeroPoints
+                ) {
+
+                    zero =
+                        this._getPackedZeroPoint(
+                            zeroPoints,
+                            scaleIndex
+                        );
+                }
+
+
+                const value =
+                    (
+                        q - zero
+                    ) * scale;
+
+
+                sample[
+                    row *
+                    sampleCols +
+                    col
+                ] = value;
+
+
+                if (
+                    !Number.isFinite(
+                        value
+                    )
+                ) {
+
+                    bad++;
+
+                } else {
+
+                    minimum =
+                        Math.min(
+                            minimum,
+                            value
+                        );
+
+                    maximum =
+                        Math.max(
+                            maximum,
+                            value
+                        );
+                }
+            }
+        }
+
+
+        console.log(
+            "[AI] Q4 statistics:",
+            {
+                minimum,
+                maximum,
+                bad,
+                sampleRows,
+                sampleCols
+            }
+        );
+
+
+        return {
+            node,
+            K: actualK,
+            N: actualN,
+            bits,
+            blockSize,
+            blocksPerRow,
+            blobSize,
+            packedWeights,
+            scales,
+            zeroPoints,
+            sample,
+            minimum,
+            maximum,
+            bad
+        };
+    }
+
+
+    _prepareQuantizedWeights() {
+
+        if (
+            !this.model ||
+            !this.model.inspectMatMulNBits
+        ) {
+
+            throw new Error(
+                "ONNX model не підтримує MatMulNBits inspection."
+            );
+        }
+
+
+        const nodes =
+            this.model.inspectMatMulNBits();
+
+
+        if (
+            !nodes ||
+            !nodes.length
+        ) {
+
+            throw new Error(
+                "У моделі не знайдено MatMulNBits."
+            );
+        }
+
+
+        this.quantizedLayers =
+            nodes;
+
+
+        console.log(
+            "[AI] Quantized linear layers:",
+            nodes.length
+        );
+
+
+        this.firstQMatMul =
+            nodes[0];
+
+
+        console.log(
+            "[AI] Перший MatMulNBits:",
+            {
+                name:
+                    this.firstQMatMul.name,
+
+                opType:
+                    this.firstQMatMul.opType,
+
+                inputs:
+                    this.firstQMatMul.inputs,
+
+                outputs:
+                    this.firstQMatMul.outputs,
+
+                attributes:
+                    this.firstQMatMul.attributes
+            }
+        );
+    }
+
+
+    _prepareForward() {
+
+        try {
+
+            this._prepareQuantizedWeights();
+
+
+            if (
+                !this.firstQMatMul
+            ) {
+
+                throw new Error(
+                    "Перший QMatMul відсутній."
+                );
+            }
+
+
+            const decoded =
+                this._dequantizeMatMulNBits(
+                    this.firstQMatMul
+                );
+
+
+            if (
+                decoded.bad > 0
+            ) {
+
+                console.warn(
+                    "[AI] Q4 sample містить проблемні значення:",
+                    decoded.bad
+                );
+            }
+
+
+            if (
+                !Number.isFinite(
+                    decoded.minimum
+                ) ||
+                !Number.isFinite(
+                    decoded.maximum
+                )
+            ) {
+
+                throw new Error(
+                    "Q4 sample не містить коректних чисел."
+                );
+            }
+
+
+            this.forwardReady =
+                true;
+
+
+            console.log(
+                "[AI] Q4 forward preparation OK."
+            );
+
+
+        } catch (error) {
+
+            this.forwardReady =
+                false;
+
+
+            console.error(
+                "[AI] Q4 forward preparation error:",
+                error
             );
         }
     }
 
 
     /*
-     * ---------------------------------------------------------
-     * askAgent
-     * ---------------------------------------------------------
+     * Базові математичні примітиви.
+     * Вони потрібні для майбутнього Llama forward.
      */
 
-    async function askAgent(
-        agentKey,
-        context = {}
+    rmsNorm(
+        input,
+        weight,
+        eps = 1e-5
     ) {
 
-        if (!window.ai) {
-            throw new Error(
-                "window.ai не створений."
+        const out =
+            new Float32Array(
+                input.length
             );
-        }
 
-        if (
-            typeof window.ai.generate !==
-            "function"
+
+        let sum = 0;
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
         ) {
+
+            sum +=
+                input[i] *
+                input[i];
+        }
+
+
+        const inv =
+            1 /
+            Math.sqrt(
+                sum /
+                input.length +
+                eps
+            );
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            out[i] =
+                input[i] *
+                inv *
+                weight[i];
+        }
+
+
+        return out;
+    }
+
+
+    silu(input) {
+
+        const out =
+            new Float32Array(
+                input.length
+            );
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            const x =
+                input[i];
+
+
+            out[i] =
+                x /
+                (
+                    1 +
+                    Math.exp(-x)
+                );
+        }
+
+
+        return out;
+    }
+
+
+    softmax(input) {
+
+        const out =
+            new Float32Array(
+                input.length
+            );
+
+
+        let max =
+            -Infinity;
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            if (
+                input[i] > max
+            ) {
+
+                max =
+                    input[i];
+            }
+        }
+
+
+        let sum = 0;
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            out[i] =
+                Math.exp(
+                    input[i] -
+                    max
+                );
+
+            sum +=
+                out[i];
+        }
+
+
+        if (sum === 0) {
+            return out;
+        }
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            out[i] /=
+                sum;
+        }
+
+
+        return out;
+    }
+
+
+    dot(a, b) {
+
+        const length =
+            Math.min(
+                a.length,
+                b.length
+            );
+
+
+        let result = 0;
+
+
+        for (
+            let i = 0;
+            i < length;
+            i++
+        ) {
+
+            result +=
+                a[i] *
+                b[i];
+        }
+
+
+        return result;
+    }
+
+
+    argmax(input) {
+
+        let index = 0;
+        let value = -Infinity;
+
+
+        for (
+            let i = 0;
+            i < input.length;
+            i++
+        ) {
+
+            if (
+                input[i] > value
+            ) {
+
+                value =
+                    input[i];
+
+                index =
+                    i;
+            }
+        }
+
+
+        return index;
+    }
+
+
+    applyRoPE(
+        vector,
+        position,
+        theta = 100000
+    ) {
+
+        const out =
+            new Float32Array(
+                vector
+            );
+
+
+        const half =
+            Math.floor(
+                vector.length / 2
+            );
+
+
+        for (
+            let i = 0;
+            i < half;
+            i++
+        ) {
+
+            const exponent =
+                (
+                    2 * i
+                ) /
+                vector.length;
+
+
+            const frequency =
+                1 /
+                Math.pow(
+                    theta,
+                    exponent
+                );
+
+
+            const angle =
+                position *
+                frequency;
+
+
+            const cos =
+                Math.cos(angle);
+
+
+            const sin =
+                Math.sin(angle);
+
+
+            const a =
+                vector[
+                    2 * i
+                ];
+
+
+            const b =
+                vector[
+                    2 * i + 1
+                ];
+
+
+            out[
+                2 * i
+            ] =
+                a * cos -
+                b * sin;
+
+
+            out[
+                2 * i + 1
+            ] =
+                a * sin +
+                b * cos;
+        }
+
+
+        return out;
+    }
+
+
+    async generate(
+        prompt,
+        options = {}
+    ) {
+
+        if (!this.ready) {
+
             throw new Error(
-                "SmallLLM.generate не знайдений."
+                "SmallLLM ще не готовий."
             );
         }
 
-        const prompt =
-            context.prompt ||
-            (
-                agentKey === "akira"
-                    ? "Ти Акіра."
-                    : "Ти Яні."
-            );
 
-        return await window.ai.generate(
-            prompt,
-            {
-                agentKey,
-                context
-            }
+        if (!this.forwardReady) {
+
+            throw new Error(
+                "Q4 forward не пройшов підготовчий тест."
+            );
+        }
+
+
+        if (!this.tokenizer) {
+
+            throw new Error(
+                "Tokenizer ще не підключений."
+            );
+        }
+
+
+        /*
+         * Тут поки НЕ робимо вигляд,
+         * що повний Llama forward уже працює.
+         *
+         * Наступний етап:
+         *
+         * tokenizer
+         * ↓
+         * embedding
+         * ↓
+         * 30 transformer layers
+         * ↓
+         * attention
+         * ↓
+         * RoPE
+         * ↓
+         * GQA
+         * ↓
+         * SwiGLU
+         * ↓
+         * RMSNorm
+         * ↓
+         * lm_head
+         * ↓
+         * sampling
+         */
+
+
+        throw new Error(
+            "Q4 decoder готовий. Повний Llama forward ще не підключений."
+        );
+    }
+}
+
+
+async function askAgent(
+    agent,
+    prompt,
+    options = {}
+) {
+
+    if (
+        !window.ai
+    ) {
+
+        throw new Error(
+            "AI engine не створений."
         );
     }
 
 
-    window.SmallLLM =
-        SmallLLM;
+    return await window.ai.generate(
+        prompt,
+        options
+    );
+}
 
-    window.askAgent =
-        askAgent;
 
-})();
+window.SmallLLM =
+    SmallLLM;
+
+window.askAgent =
+    askAgent;
