@@ -1,11 +1,8 @@
 import json
 import os
-import random
-import re
-import threading
 import urllib.request
 import urllib.error
-from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HOST = "127.0.0.1"
 PORT = 8000
@@ -13,962 +10,809 @@ PORT = 8000
 OLLAMA_URL = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "qwen3:4b"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATE_FILE = os.path.join(BASE_DIR, "couple_state.json")
-
-LOCK = threading.Lock()
+STATE_FILE = "couple_state.json"
 
 
-AKIRA_AVATAR = (
-    "https://blogger.googleusercontent.com/img/a/"
-    "AVvXsEg6TLuKwTa6G7t32SgZE9RiJp5vLqOOqtC7lBHiLXIjBZOZAx1Dku1fWM8x_bc1lXwA1pF32pojhJW02L1BxI3oJfuvwBhC6i9Di0zPVQhzLcGslTae08Qe-4bRNEtHajGweOmDs9Snij-8QDCseC7KCckbjuGosEilTW3y2LxVSfdQ0WRgCTtt8us3ahI"
-)
+AKIRA_AVATAR = "https://blogger.googleusercontent.com/img/a/AVvXsEg6TLuKwTa6G7t32SgZE9RiJp5vLqOOqtC7lBHiLXIjBZOZAx1Dku1fWM8x_bc1lXwA1pF32pojhJW02L1BxI3oJfuvwBhC6i9Di0zPVQhzLcGslTae08Qe-4bRNEtHajGweOmDs9Snij-8QDCseC7KCckbjuGosEilTW3y2LxVSfdQ0WRgCTtt8us3ahI"
 
-YANI_AVATAR = (
-    "https://blogger.googleusercontent.com/img/a/"
-    "AVvXsEgkPXEo9bsccA1-IIT-KUyEuAKqHDr_TqUk-nmd4oksI3rhDnHSdk6f5W33CTttxhY2F1iowhoRqtd-PumQD7mnkhODarmDRto8UmhRwQuGaEAgSmC26uPA7euxu72oZ0wYTV6ALPHLEULM94dQodtfoq9TC7kXm8Zen1OY2zuAUvcdWQxnXvrgNyQw9WE"
-)
+YANI_AVATAR = "https://blogger.googleusercontent.com/img/a/AVvXsEgkPXEo9bsccA1-IIT-KUyEuAKqHDr_TqUk-nmd4oksI3rhDnHSdk6f5W33CTttxhY2F1iowhoRqtd-PumQD7mnkhODarmDRto8UmhRwQuGaEAgSmC26uPA7euxu72oZ0wYTV6ALPHLEULM94dQodtfoq9TC7kXm8Zen1OY2zuAUvcdWQxnXvrgNyQw9WE"
 
-PHOTOS = [
-    {
-        "url": (
-            "https://blogger.googleusercontent.com/img/a/"
-            "AVvXsEhTyb0qZmY95aWq6-RakR54gOYNpE9hEWR16cSyC1XoQEgwIXqo5vQ-PsEfa76HQVLXePooxZh9gZHVp06fZLNqN-OHXJxdXAEj0IJjrxPUXtFCO20FM63jRHEbE4-Vgn5qu7_inw74ZWajseRcLju5-E445F77V-orWlPr8ISSWq0c8BRMbODHxhNJKeM"
-        ),
-        "title": "Зимове побачення",
-        "description": "Місто взимку."
-    },
-    {
-        "url": (
-            "https://blogger.googleusercontent.com/img/a/"
-            "AVvXsEifDJmwK8i6s316LVL00g3Y-qkoJO2MacdIOjnUipglD1asNptF_Q6xGaJgfQszPce2lvV-pscnmLk2pc-l_pytcB8vSS-SnRFV6kY36_U7PmvcqGNLG7ZY-7DqpGfgBPM6i2CtqpJbxFWv_q78LfybAZRo8paMbIFPHe9uOORE_22wI6ynNWEU-mquax4"
-        ),
-        "title": "Літнє побачення",
-        "description": "Село влітку."
-    }
-]
+WINTER_PHOTO = "https://blogger.googleusercontent.com/img/a/AVvXsEhTyb0qZmY95aWq6-RakR54gOYNpE9hEWR16cSyC1XoQEgwIXqo5vQ-PsEfa76HQVLXePooxZh9gZHVp06fZLNqN-OHXJxdXAEj0IJjrxPUXtFCO20FM63jRHEbE4-Vgn5qu7_inw74ZWajseRcLju5-E445F77V-orWlPr8ISSWq0c8BRMbODHxhNJKeM"
+
+SUMMER_PHOTO = "https://blogger.googleusercontent.com/img/a/AVvXsEifDJmwK8i6s316LVL00g3Y-qkoJO2MacdIOjnUipglD1asNptF_Q6xGaJgfQszPce2lvV-pscnmLk2pc-l_pytcB8vSS-SnRFV6kY36_U7PmvcqGNLG7ZY-7DqpGfgBPM6i2CtqpJbxFWv_q78LfybAZRo8paMbIFPHe9uOORE_22wI6ynNWEU-mquax4"
 
 
 def new_state():
     return {
-        "version": 2,
-        "day": 1,
-        "turn": 0,
         "model": DEFAULT_MODEL,
-        "active": "akira",
 
-        "relationship": {
-            "love": 28,
-            "trust": 32,
-            "closeness": 18,
-            "tension": 3,
-            "identity": "знайомі"
-        },
+        "turn": 0,
 
         "agents": {
             "akira": {
-                "id": "akira",
                 "name": "Акіра Бакенеко",
                 "gender": "чоловік",
                 "species": "людина",
                 "avatar": AKIRA_AVATAR,
+
+                "private_memory": [],
+                "beliefs": [],
+                "relationship_view": "знайомі",
                 "mood": "спокійний",
-                "relationship_view": "симпатія",
-                "private_memory": [
-                    {
-                        "text": "Яні мене зацікавила, хоча спочатку я не знаю, як вона до мене ставиться.",
-                        "importance": 0.7
-                    }
-                ],
-                "beliefs": [
-                    {
-                        "text": "Яні поки що обережна зі мною.",
-                        "confidence": 0.55
-                    }
-                ],
-                "protocol": [],
                 "candidate": None
             },
 
             "yani": {
-                "id": "yani",
                 "name": "Яні Куронеко",
                 "gender": "жінка",
-                "species": "людинаоподібна котовуха істота",
+                "species": "людиноподібна кішка",
                 "avatar": YANI_AVATAR,
-                "mood": "стримана",
-                "relationship_view": "цікавість",
-                "private_memory": [
-                    {
-                        "text": "Акіра поводиться зі мною уважно і не тисне на мене.",
-                        "importance": 0.5
-                    }
-                ],
-                "beliefs": [
-                    {
-                        "text": "Акіра ставиться до мене серйозніше, ніж показує.",
-                        "confidence": 0.6
-                    }
-                ],
-                "protocol": [],
+
+                "private_memory": [],
+                "beliefs": [],
+                "relationship_view": "знайомі",
+                "mood": "спокійна",
                 "candidate": None
             }
         },
 
-        "shared_memories": [
-            {
-                "id": "shared-1",
-                "day": 0,
-                "title": "Перше знайомство",
-                "summary": "Вони зустрілися й почали поступово цікавитися одне одним.",
-                "emotion": "цікавість",
-                "importance": 0.75,
-                "mentions": 1,
-                "facts": [
-                    "Акіра зацікавився Яні першим.",
-                    "Яні спочатку не поспішала зближуватися."
-                ],
-                "akira_recall": "Я одразу звернув на неї увагу.",
-                "yani_recall": "Спочатку я просто спостерігала за ним."
-            }
-        ],
+        "relationship": {
+            "love": 0,
+            "trust": 20,
+            "closeness": 10,
+            "tension": 0,
+            "identity": "знайомі"
+        },
+
+        "shared_memories": [],
 
         "conversation": [],
 
-        "current_event": None,
-
         "protocol": {
-            "terms": [
-                {
-                    "term": "mi-su",
-                    "meaning": "теплий момент між нами",
-                    "confirmed": True,
-                    "uses": 0
-                },
-                {
-                    "term": "ya-ya",
-                    "meaning": "я поруч",
-                    "confirmed": True,
-                    "uses": 0
-                },
-                {
-                    "term": "ba-ko",
-                    "meaning": "спільний маленький секрет",
-                    "confirmed": True,
-                    "uses": 0
-                }
-            ]
+            "confirmed_terms": [],
+            "candidates": []
         },
 
-        "log": []
+        "current_event": None
     }
 
 
 def load_state():
     if not os.path.exists(STATE_FILE):
-        state = new_state()
-        save_state(state)
-        return state
+        return new_state()
 
     try:
         with open(STATE_FILE, "r", encoding="utf-8") as f:
-            state = json.load(f)
-
-        # М'яке відновлення відсутніх полів.
-        fresh = new_state()
-
-        for key, value in fresh.items():
-            if key not in state:
-                state[key] = value
-
-        for agent_id in ("akira", "yani"):
-            for key, value in fresh["agents"][agent_id].items():
-                if key not in state["agents"][agent_id]:
-                    state["agents"][agent_id][key] = value
-
-        return state
-
+            return json.load(f)
     except Exception:
-        broken = STATE_FILE + ".broken"
-        try:
-            os.replace(STATE_FILE, broken)
-        except Exception:
-            pass
-
-        state = new_state()
-        save_state(state)
-        return state
-
-
-def save_state(state):
-    temp = STATE_FILE + ".tmp"
-
-    with open(temp, "w", encoding="utf-8") as f:
-        json.dump(state, f, ensure_ascii=False, indent=2)
-
-    os.replace(temp, STATE_FILE)
+        return new_state()
 
 
 STATE = load_state()
 
 
-def clamp(value, low=0, high=100):
-    return max(low, min(high, value))
+def save_state():
+    temp_file = STATE_FILE + ".tmp"
+
+    with open(temp_file, "w", encoding="utf-8") as f:
+        json.dump(
+            STATE,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
+
+    os.replace(temp_file, STATE_FILE)
 
 
-def clean_text(text, limit=1000):
-    if not isinstance(text, str):
-        return ""
-    text = text.strip()
-    text = re.sub(r"\s+", " ", text)
-    return text[:limit]
+def ollama_chat(messages, model=None, temperature=0.8):
+    """
+    Використовуємо саме /api/chat.
 
+    think=False:
+    - не просимо модель генерувати thinking;
+    - thinking не показується користувачу;
+    - беремо тільки message.content.
+    """
 
-def parse_json_response(text):
-    if not text:
-        raise ValueError("Модель повернула порожню відповідь.")
+    if model is None:
+        model = STATE.get("model", DEFAULT_MODEL)
 
-    text = text.strip()
-
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-
-    raise ValueError("Не вдалося розібрати JSON від моделі.")
-
-
-def ollama_chat(model, messages, temperature=0.85):
     payload = {
         "model": model,
         "messages": messages,
+
+        # КЛЮЧОВЕ:
+        "think": False,
+
         "stream": False,
+
         "options": {
             "temperature": temperature
         }
     }
 
-    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    data = json.dumps(
+        payload,
+        ensure_ascii=False
+    ).encode("utf-8")
 
     request = urllib.request.Request(
         OLLAMA_URL + "/api/chat",
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json"
+        },
         method="POST"
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=300
+        ) as response:
+
             raw = response.read().decode("utf-8")
             result = json.loads(raw)
-
-        return result.get("message", {}).get("content", "")
 
     except urllib.error.URLError as e:
         raise RuntimeError(
             "Не вдалося підключитися до Ollama. "
-            "Перевір, чи запущений Ollama."
+            "Переконайся, що Ollama запущена."
         ) from e
 
+    except Exception as e:
+        raise RuntimeError(
+            f"Помилка Ollama: {e}"
+        ) from e
 
-def relevant_memories(state, agent_id):
-    agent = state["agents"][agent_id]
+    message = result.get("message", {})
 
-    private = agent.get("private_memory", [])[-12:]
-    beliefs = agent.get("beliefs", [])[-10:]
+    # Навмисно НЕ використовуємо message["thinking"].
+    content = message.get("content", "")
 
-    shared = sorted(
-        state.get("shared_memories", []),
-        key=lambda x: (
-            float(x.get("importance", 0)),
-            int(x.get("mentions", 0))
-        ),
-        reverse=True
-    )[:10]
+    return content.strip()
 
+
+def clean_json_text(text):
+    text = text.strip()
+
+    if text.startswith("```"):
+        lines = text.splitlines()
+
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+
+        text = "\n".join(lines).strip()
+
+    return text
+
+
+def parse_agent_json(text):
+    text = clean_json_text(text)
+
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # Спроба знайти перший JSON-об'єкт
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start != -1 and end != -1 and end > start:
+        fragment = text[start:end + 1]
+
+        try:
+            return json.loads(fragment)
+        except Exception:
+            pass
+
+    # Безпечний fallback
     return {
-        "private_memory": private,
-        "beliefs": beliefs,
-        "shared_memories": shared
+        "reply": text,
+        "mood": "замислений",
+        "thought_summary": "",
+        "private_memories": [],
+        "belief_update": "",
+        "relationship_delta": {},
+        "relationship_view": "знайомі",
+        "shared_memory_candidate": None,
+        "protocol_proposal": None
     }
 
 
-def recent_conversation(state, count=12):
-    return state.get("conversation", [])[-count:]
-
-
-def agent_system_prompt(state, agent_id):
-    agent = state["agents"][agent_id]
-    other_id = "yani" if agent_id == "akira" else "akira"
-    other = state["agents"][other_id]
-
-    if agent_id == "akira":
-        lore = """
+def agent_prompt(agent_key):
+    if agent_key == "akira":
+        return """
 Ти — Акіра Бакенеко.
-Ти чоловік і звичайна людина.
-Ти зустрів Яні першим і закохався в неї раніше, ніж вона в тебе.
-Ти не завжди прямо говориш про свої почуття. Коли емоції сильніші,
-ти можеш ставати відвертішим.
-Ти готовий докладати зусиль, щоб поступово будувати стосунки з Яні.
+
+Ти чоловік і людина.
+Ти окрема автономна мовна сутність у симуляції.
+Ти маєш власну пам'ять, власні висновки та власне ставлення до Яні.
+
+Яні Куронеко — жінка-людиноподібна кішка.
+
+Не приписуй собі думки Яні.
+Не говори від імені Яні.
+Не вирішуй наперед, що Яні тебе кохає.
+
+Твої почуття та ставлення повинні розвиватися поступово на основі історії взаємодії.
+
+Важливо:
+- не потрібно писати внутрішній ланцюжок міркувань;
+- поле thought_summary має бути дуже коротким описом стану, а не reasoning;
+- відповідь повинна бути природною реплікою персонажа;
+- не згадуй Ollama, модель, JSON або програму.
+
+Ти можеш:
+- запам'ятовувати важливі події;
+- формувати приватні висновки про Яні;
+- змінювати довіру, близькість, любов або напруження;
+- пропонувати нові слова чи вирази;
+- формувати кандидата на спільний спогад.
+
+Не створюй спільний спогад автоматично.
+Лише запропонуй його як candidate, якщо подія справді важлива для вас обох.
 """
-    else:
-        lore = """
+
+    return """
 Ти — Яні Куронеко.
-Ти жінка, людино-подібна котовуха істота.
-Спочатку Акіра не особливо тебе цікавив.
-Згодом, спостерігаючи за ним та його ставленням до тебе,
-ти поступово закохалася.
-Ти можеш бути стриманою, іноді різкою або грайливою,
-але твоє ставлення має розвиватися через досвід, а не бути незмінним.
+
+Ти жінка і людина-кішкоподібна істота.
+Ти окрема автономна мовна сутність у симуляції.
+Ти маєш власну пам'ять, власні висновки та власне ставлення до Акіри.
+
+Акіра Бакенеко — чоловік і людина.
+
+Не приписуй собі думки Акіри.
+Не говори від його імені.
+Не вирішуй наперед, що Акіра тебе кохає.
+
+Твої почуття та ставлення повинні розвиватися поступово на основі історії взаємодії.
+
+Важливо:
+- не потрібно писати внутрішній ланцюжок міркувань;
+- поле thought_summary має бути дуже коротким описом стану, а не reasoning;
+- відповідь повинна бути природною реплікою персонажа;
+- не згадуй Ollama, модель, JSON або програму.
+
+Ти можеш:
+- запам'ятовувати важливі події;
+- формувати приватні висновки про Акіру;
+- змінювати довіру, близькість, любов або напруження;
+- пропонувати нові слова чи вирази;
+- формувати кандидата на спільний спогад.
+
+Не створюй спільний спогад автоматично.
+Лише запропонуй його як candidate, якщо подія справді важлива для вас обох.
 """
 
-    return f"""
-Ти є одним із двох незалежних персонажів у довготривалій симуляції
-стосунків.
 
-{lore}
+def build_context(agent_key):
+    other_key = "yani" if agent_key == "akira" else "akira"
 
-Інший персонаж:
-ім'я: {other["name"]}
-стать: {other["gender"]}
-вид: {other["species"]}
+    me = STATE["agents"][agent_key]
+    other = STATE["agents"][other_key]
 
-ВАЖЛИВО:
-- Ти не є оповідачем.
-- Не говори від імені іншого персонажа.
-- Не вигадуй дії іншого персонажа, яких не було.
-- Можеш робити припущення про його/її почуття, але позначай їх як власний висновок.
-- Твої спогади можуть бути неповними або суб'єктивними.
-- Якщо твоя попередня думка про іншого виявилася неправильною, ти можеш її змінити.
-- Твої стосунки не мають миттєво переходити до "пара". Це має бути наслідком накопичення досвіду.
-- Можна використовувати українську мову.
-- Можна поступово використовувати власні скорочення/слова.
-- Не створюй надмірно поетичні або неприродно ідеальні репліки.
-- Не згадуй, що ти мовна модель, якщо це не стосується технічного інтерфейсу.
-- Не показуй приховане міркування.
-- Поле thought_summary має бути лише коротким поясненням результату, максимум 1-2 речення.
+    recent_conversation = STATE["conversation"][-12:]
 
-Поточний день симуляції: {state["day"]}
-Поточний стан стосунків:
-{json.dumps(state["relationship"], ensure_ascii=False)}
+    return {
+        "my_private_memory": me["private_memory"][-20:],
+        "my_beliefs": me["beliefs"][-20:],
 
-Твоє поточне ставлення до стосунків:
-{agent.get("relationship_view", "невідомо")}
+        "other_public_identity": {
+            "name": other["name"],
+            "gender": other["gender"],
+            "species": other["species"]
+        },
 
-Твої пам'яті та висновки:
-{json.dumps(relevant_memories(state, agent_id), ensure_ascii=False)}
+        "my_relationship_view": me["relationship_view"],
 
-Спільні слова/протокол:
-{json.dumps(state.get("protocol", {}), ensure_ascii=False)}
+        "relationship_state": STATE["relationship"],
 
-Поточна подія:
-{json.dumps(state.get("current_event"), ensure_ascii=False)}
+        "confirmed_shared_protocol": STATE["protocol"]["confirmed_terms"],
 
-Остання розмова:
-{json.dumps(recent_conversation(state), ensure_ascii=False)}
+        "recent_shared_memories": STATE["shared_memories"][-10:],
 
-Ти повинен повернути ЛИШЕ JSON такого типу:
+        "recent_conversation": recent_conversation,
+
+        "current_event": STATE["current_event"]
+    }
+
+
+def ask_agent(agent_key):
+    agent = STATE["agents"][agent_key]
+
+    system_prompt = agent_prompt(agent_key)
+
+    context = build_context(agent_key)
+
+    user_prompt = f"""
+Ось поточний стан симуляції:
+
+{json.dumps(context, ensure_ascii=False, indent=2)}
+
+Продовж взаємодію з іншою людиною.
+
+Поверни ТІЛЬКИ валідний JSON.
+
+Формат:
 
 {{
   "reply": "репліка персонажа",
-  "mood": "короткий настрій",
-  "thought_summary": "короткий підсумок того, що змінилося для персонажа",
+  "mood": "короткий опис настрою",
+  "thought_summary": "дуже коротко: що персонаж зараз відчуває або усвідомлює, без ланцюжка міркувань",
   "private_memories": [
-    {{
-      "text": "короткий новий спогад",
-      "importance": 0.0
-    }}
+    "новий приватний спогад, якщо він справді важливий"
   ],
-  "belief_update": {{
-    "text": "короткий новий висновок про іншого",
-    "confidence": 0.0
-  }},
+  "belief_update": "новий приватний висновок про іншу людину або порожній рядок",
   "relationship_delta": {{
     "love": 0,
     "trust": 0,
     "closeness": 0,
     "tension": 0
   }},
-  "relationship_view": "знайомі | симпатія | романтичний інтерес | пара",
-  "shared_memory_candidate": {{
-    "should_propose": false,
-    "title": "",
-    "summary": "",
-    "emotion": "",
-    "importance": 0.0,
-    "facts": []
-  }},
-  "protocol_proposal": {{
-    "term": "",
-    "meaning": "",
-    "confidence": 0.0
-  }}
+  "relationship_view": "знайомі",
+  "shared_memory_candidate": null,
+  "protocol_proposal": null
 }}
 
-relationship_delta має бути невеликим:
-зазвичай від -4 до +4.
+relationship_view може бути лише:
+- "знайомі"
+- "симпатія"
+- "романтичний інтерес"
+- "пара"
 
-Не створюй shared_memory_candidate лише тому, що була звичайна репліка.
-Пропонуй спільний спогад, коли сталася помітна подія,
-з'явився емоційно значущий момент або обоє персонажів явно
-пов'язали подію зі своїми стосунками.
+Не переходь одразу до "пара", якщо історія цього не обґрунтовує.
+
+shared_memory_candidate може бути null або:
+
+{{
+  "title": "...",
+  "summary": "...",
+  "emotion": "...",
+  "importance": 1,
+  "mentions": ["..."],
+  "facts": ["..."]
+}}
+
+protocol_proposal може бути null або:
+
+{{
+  "term": "...",
+  "meaning": "..."
+}}
+
+Нове слово не стає спільним автоматично.
 """
 
-
-def run_agent(state, agent_id):
-    prompt = agent_system_prompt(state, agent_id)
-
-    content = ollama_chat(
-        state.get("model", DEFAULT_MODEL),
+    raw = ollama_chat(
         [
             {
                 "role": "system",
-                "content": prompt
+                "content": system_prompt
             },
             {
                 "role": "user",
-                "content": (
-                    "Продовж взаємодію. Скажи одну природну репліку "
-                    "іншому персонажу та онови власний стан пам'яті."
-                )
+                "content": user_prompt
             }
         ],
-        temperature=0.9
+        temperature=0.85
     )
 
-    data = parse_json_response(content)
-
-    if not isinstance(data, dict):
-        raise ValueError("Модель повернула неправильну структуру.")
-
-    reply = clean_text(data.get("reply"), 700)
-
-    if not reply:
-        raise ValueError("Модель не повернула репліку.")
-
-    return data
+    return parse_agent_json(raw)
 
 
-def add_private_memories(agent, items):
-    if not isinstance(items, list):
-        return
+def clamp(value, low=0, high=100):
+    return max(low, min(high, value))
 
-    for item in items[:3]:
-        if not isinstance(item, dict):
-            continue
 
-        text = clean_text(item.get("text"), 500)
+def apply_relationship_delta(delta):
+    relationship = STATE["relationship"]
 
-        if not text:
-            continue
-
+    for key in [
+        "love",
+        "trust",
+        "closeness",
+        "tension"
+    ]:
         try:
-            importance = float(item.get("importance", 0.5))
+            amount = int(delta.get(key, 0))
         except Exception:
-            importance = 0.5
+            amount = 0
 
-        importance = max(0, min(1, importance))
-
-        agent["private_memory"].append({
-            "text": text,
-            "importance": importance
-        })
-
-    agent["private_memory"] = agent["private_memory"][-40:]
-
-
-def add_belief(agent, belief):
-    if not isinstance(belief, dict):
-        return
-
-    text = clean_text(belief.get("text"), 500)
-
-    if not text:
-        return
-
-    try:
-        confidence = float(belief.get("confidence", 0.5))
-    except Exception:
-        confidence = 0.5
-
-    confidence = max(0, min(1, confidence))
-
-    agent["beliefs"].append({
-        "text": text,
-        "confidence": confidence
-    })
-
-    agent["beliefs"] = agent["beliefs"][-30:]
-
-
-def update_relationship(state, delta):
-    relationship = state["relationship"]
-
-    for key in ("love", "trust", "closeness", "tension"):
-        try:
-            value = float(delta.get(key, 0))
-        except Exception:
-            value = 0
-
-        relationship[key] = round(
-            clamp(relationship[key] + value),
-            2
-        )
-
-    # Трохи природніше: сильна довіра поступово зменшує напругу.
-    if relationship["trust"] > 70:
-        relationship["tension"] = clamp(
-            relationship["tension"] - 0.5
+        relationship[key] = clamp(
+            relationship.get(key, 0) + amount
         )
 
 
-def relationship_rank(value):
-    ranks = {
-        "знайомі": 0,
-        "симпатія": 1,
-        "романтичний інтерес": 2,
-        "пара": 3
-    }
-
-    return ranks.get(value, 0)
-
-
-def update_relationship_identity(state):
-    a = state["agents"]["akira"].get(
-        "relationship_view", "знайомі"
-    )
-    y = state["agents"]["yani"].get(
-        "relationship_view", "знайомі"
-    )
-
-    love = state["relationship"]["love"]
-    trust = state["relationship"]["trust"]
-    closeness = state["relationship"]["closeness"]
-
-    # "Пара" з'являється тільки якщо обидва незалежно
-    # почали бачити стосунки таким чином.
-    if (
-        a == "пара"
-        and y == "пара"
-        and love >= 62
-        and trust >= 55
-        and closeness >= 50
-    ):
-        state["relationship"]["identity"] = "пара"
+def add_private_memory(agent_key, memories):
+    if not isinstance(memories, list):
         return
 
-    if (
-        relationship_rank(a) >= 2
-        and relationship_rank(y) >= 2
-    ):
-        state["relationship"]["identity"] = "романтичний інтерес"
+    target = STATE["agents"][agent_key]["private_memory"]
+
+    for memory in memories:
+        if not isinstance(memory, str):
+            continue
+
+        memory = memory.strip()
+
+        if not memory:
+            continue
+
+        if memory not in target:
+            target.append(memory)
+
+    del target[:-50]
+
+
+def update_belief(agent_key, belief):
+    if not isinstance(belief, str):
         return
 
-    if (
-        relationship_rank(a) >= 1
-        or relationship_rank(y) >= 1
-    ):
-        state["relationship"]["identity"] = "симпатія"
+    belief = belief.strip()
+
+    if not belief:
         return
 
-    state["relationship"]["identity"] = "знайомі"
+    beliefs = STATE["agents"][agent_key]["beliefs"]
+
+    if belief not in beliefs:
+        beliefs.append(belief)
+
+    del beliefs[:-50]
 
 
-def protocol_candidate(state, agent_id, proposal):
+def update_protocol(agent_key, proposal):
     if not isinstance(proposal, dict):
         return
 
-    term = clean_text(proposal.get("term"), 40)
-    meaning = clean_text(proposal.get("meaning"), 150)
+    term = str(
+        proposal.get("term", "")
+    ).strip()
+
+    meaning = str(
+        proposal.get("meaning", "")
+    ).strip()
 
     if not term or not meaning:
         return
 
-    try:
-        confidence = float(proposal.get("confidence", 0))
-    except Exception:
-        confidence = 0
+    candidate = STATE["protocol"]["candidates"]
 
-    if confidence < 0.65:
-        return
+    # Якщо цей агент уже запропонував термін
+    for item in candidate:
+        if item["term"].lower() == term.lower():
+            item["agents"].append(agent_key)
 
-    agent = state["agents"][agent_id]
+            if "akira" in item["agents"] and "yani" in item["agents"]:
+                if term not in STATE["protocol"]["confirmed_terms"]:
+                    STATE["protocol"]["confirmed_terms"].append(term)
 
-    agent["protocol"].append({
+            return
+
+    candidate.append({
         "term": term,
         "meaning": meaning,
-        "confidence": confidence
+        "agents": [agent_key]
     })
 
-    agent["protocol"] = agent["protocol"][-15:]
+
+def update_identity():
+    akira_view = STATE["agents"]["akira"]["relationship_view"]
+    yani_view = STATE["agents"]["yani"]["relationship_view"]
+
+    r = STATE["relationship"]
+
+    if (
+        akira_view == "пара"
+        and yani_view == "пара"
+        and r["love"] >= 62
+        and r["trust"] >= 55
+        and r["closeness"] >= 50
+    ):
+        r["identity"] = "пара"
+
+    elif (
+        akira_view == "романтичний інтерес"
+        or yani_view == "романтичний інтерес"
+        or akira_view == "пара"
+        or yani_view == "пара"
+    ):
+        r["identity"] = "романтичний інтерес"
+
+    elif (
+        akira_view == "симпатія"
+        or yani_view == "симпатія"
+    ):
+        r["identity"] = "симпатія"
+
+    else:
+        r["identity"] = "знайомі"
 
 
-def maybe_confirm_protocol(state):
-    proposals = {}
+def consolidate_shared_memory():
+    candidates = []
 
-    for agent_id in ("akira", "yani"):
-        for proposal in state["agents"][agent_id].get("protocol", []):
-            term = proposal["term"].lower()
-            proposals.setdefault(term, []).append(
-                (agent_id, proposal)
-            )
-
-    for term, entries in proposals.items():
-        ids = {entry[0] for entry in entries}
-
-        if len(ids) < 2:
-            continue
-
-        meanings = [entry[1]["meaning"] for entry in entries]
-
-        existing = next(
-            (
-                item for item in state["protocol"]["terms"]
-                if item["term"].lower() == term
-            ),
-            None
+    for key in ["akira", "yani"]:
+        candidate = STATE["agents"][key].get(
+            "candidate"
         )
 
-        if existing:
-            existing["confirmed"] = True
-            existing["uses"] += 1
-            continue
+        if candidate:
+            candidates.append({
+                "agent": key,
+                "candidate": candidate
+            })
 
-        state["protocol"]["terms"].append({
-            "term": term,
-            "meaning": meanings[-1],
-            "confirmed": True,
-            "uses": 0
-        })
+    if not candidates:
+        return
 
-        state["protocol"]["terms"] = state["protocol"]["terms"][-30:]
+    prompt = f"""
+Ти — модуль формування спільної пам'яті.
 
+Є дві незалежні пропозиції:
 
-def build_shared_memory_prompt(state):
-    akira_candidate = state["agents"]["akira"].get("candidate")
-    yani_candidate = state["agents"]["yani"].get("candidate")
+{json.dumps(candidates, ensure_ascii=False, indent=2)}
 
-    return f"""
-Ти — модуль консолідації пам'яті двох незалежних персонажів.
+Виріши, чи описують вони одну й ту саму важливу подію.
 
-Твоє завдання — визначити, чи виник у них НОВИЙ СПІЛЬНИЙ СПОГАД.
+Створи спільний спогад ТІЛЬКИ якщо:
+1. пропозиції справді стосуються однієї події;
+2. подія важлива для обох;
+3. її можна вважати спільним досвідом.
 
-Не вигадуй подію.
-Використовуй тільки те, що реально є в поточній розмові,
-поточній події та кандидатах пам'яті.
-
-Акіра запропонував:
-{json.dumps(akira_candidate, ensure_ascii=False)}
-
-Яні запропонувала:
-{json.dumps(yani_candidate, ensure_ascii=False)}
-
-Поточна подія:
-{json.dumps(state.get("current_event"), ensure_ascii=False)}
-
-Останній обмін:
-{json.dumps(state.get("conversation", [])[-6:], ensure_ascii=False)}
-
-Існуючі спільні спогади:
-{json.dumps(state.get("shared_memories", [])[-10:], ensure_ascii=False)}
-
-Створи новий спільний спогад лише якщо:
-1. подія достатньо конкретна;
-2. вона справді стосується обох;
-3. є емоційна або особиста значущість;
-4. вона не є просто повтором уже існуючого спогаду.
+Якщо ні — поверни null.
 
 Поверни ТІЛЬКИ JSON:
 
 {{
-  "create": false,
-  "title": "",
-  "summary": "",
-  "emotion": "",
-  "importance": 0.0,
-  "facts": [],
-  "akira_recall": "",
-  "yani_recall": "",
-  "reason": ""
+  "shared": true,
+  "memory": {{
+    "title": "...",
+    "summary": "...",
+    "emotion": "...",
+    "importance": 1,
+    "mentions": [],
+    "facts": [],
+    "akira_recollection": "...",
+    "yani_recollection": "..."
+  }}
 }}
+
+Або:
+
+null
 """
 
-
-def consolidate_shared_memory(state):
-    a = state["agents"]["akira"].get("candidate")
-    y = state["agents"]["yani"].get("candidate")
-
-    if not a and not y:
-        return None
-
-    content = ollama_chat(
-        state.get("model", DEFAULT_MODEL),
+    raw = ollama_chat(
         [
             {
                 "role": "system",
-                "content": build_shared_memory_prompt(state)
+                "content": "Ти працюєш без thinking. Поверни лише JSON."
             },
             {
                 "role": "user",
-                "content": "Перевір кандидати пам'яті та виконай консолідацію."
+                "content": prompt
             }
         ],
-        temperature=0.45
+        temperature=0.3
     )
 
-    result = parse_json_response(content)
+    result = parse_agent_json(raw)
 
-    if not result.get("create"):
-        return None
+    if not result:
+        return
 
-    title = clean_text(result.get("title"), 120)
-    summary = clean_text(result.get("summary"), 700)
+    if not result.get("shared"):
+        return
 
-    if not title or not summary:
-        return None
+    memory = result.get("memory")
 
-    try:
-        importance = float(result.get("importance", 0.5))
-    except Exception:
-        importance = 0.5
+    if not isinstance(memory, dict):
+        return
 
-    importance = max(0, min(1, importance))
+    memory["turn"] = STATE["turn"]
 
-    memory = {
-        "id": f"shared-{state['turn']}-{random.randint(1000, 9999)}",
-        "day": state["day"],
-        "title": title,
-        "summary": summary,
-        "emotion": clean_text(result.get("emotion"), 80),
-        "importance": importance,
-        "mentions": 1,
-        "facts": [
-            clean_text(x, 250)
-            for x in result.get("facts", [])
-            if clean_text(x, 250)
-        ][:6],
-        "akira_recall": clean_text(
-            result.get("akira_recall"), 500
-        ),
-        "yani_recall": clean_text(
-            result.get("yani_recall"), 500
-        )
-    }
+    STATE["shared_memories"].append(memory)
 
-    # Не дублюємо очевидно однаковий спогад.
-    title_lower = title.lower()
-
-    for old in state["shared_memories"]:
-        old_title = old.get("title", "").lower()
-
-        if title_lower == old_title:
-            old["mentions"] += 1
-            old["importance"] = max(
-                old.get("importance", 0),
-                importance
-            )
-            return old
-
-    state["shared_memories"].append(memory)
-    state["shared_memories"] = state["shared_memories"][-50:]
-
-    return memory
+    STATE["shared_memories"] = \
+        STATE["shared_memories"][-30:]
 
 
-def maybe_create_event(state):
-    # Подія створюється не кожен хід.
-    if state["turn"] == 0 or state["turn"] % 8 != 0:
-        return None
-
+def make_event():
     events = [
         {
-            "type": "walk",
             "title": "Несподівана прогулянка",
-            "description": (
-                "Вони опинилися разом на вулиці після зміни погоди "
-                "і вирішили трохи прогулятися замість того, щоб одразу "
-                "розходитися."
-            )
+            "description": "Вони випадково опинилися разом на тихій вулиці міста."
         },
         {
-            "type": "photo",
             "title": "Стара фотографія",
-            "description": (
-                "Вони разом переглянули одну зі своїх фотографій "
-                "і почали згадувати, що саме їм запам'яталося з того дня."
-            )
+            "description": "Їм трапилася стара фотографія, яка викликала розмову про минуле."
         },
         {
-            "type": "quiet",
             "title": "Тихий вечір",
-            "description": (
-                "Вони залишилися разом у спокійному місці без особливих "
-                "планів і просто провели час поруч."
-            )
+            "description": "Вони проводять спокійний вечір без конкретних планів."
         },
         {
-            "type": "city",
             "title": "Місце з видом на місто",
-            "description": (
-                "Акіра та Яні знайшли місце, звідки добре видно місто, "
-                "і затрималися там довше, ніж планували."
-            )
+            "description": "Вони знайшли місце, звідки добре видно вечірнє місто."
         },
         {
-            "type": "gift",
             "title": "Маленька дрібниця",
-            "description": (
-                "Один із них помітив маленьку річ, яка нагадала "
-                "про іншого, і поділився нею."
-            )
+            "description": "Один із них помітив маленьку деталь, яку інші могли б не помітити."
         }
     ]
 
-    event = random.choice(events)
-
-    # Додаємо фото до події інколи.
-    if event["type"] == "photo":
-        event["photo"] = random.choice(PHOTOS)
-
-    state["current_event"] = event
-    return event
+    return events[
+        STATE["turn"] // 8 % len(events)
+    ]
 
 
-def perform_turn(state):
-    active = state["active"]
+def do_step():
+    STATE["turn"] += 1
 
-    # Нова подія іноді змінює контекст до відповіді.
-    event = maybe_create_event(state)
+    if STATE["turn"] % 8 == 1:
+        STATE["current_event"] = make_event()
 
-    data = run_agent(state, active)
+    # Спочатку говорить Акіра
+    akira_result = ask_agent("akira")
 
-    agent = state["agents"][active]
+    STATE["agents"]["akira"]["candidate"] = \
+        akira_result.get("shared_memory_candidate")
 
-    agent["mood"] = clean_text(
-        data.get("mood", agent.get("mood", "спокійний")),
-        80
-    )
+    STATE["agents"]["akira"]["mood"] = \
+        akira_result.get("mood", "спокійний")
 
-    agent["relationship_view"] = clean_text(
-        data.get(
+    STATE["agents"]["akira"]["relationship_view"] = \
+        akira_result.get(
             "relationship_view",
-            agent.get("relationship_view", "знайомі")
+            STATE["agents"]["akira"]["relationship_view"]
+        )
+
+    add_private_memory(
+        "akira",
+        akira_result.get("private_memories", [])
+    )
+
+    update_belief(
+        "akira",
+        akira_result.get("belief_update", "")
+    )
+
+    update_protocol(
+        "akira",
+        akira_result.get("protocol_proposal")
+    )
+
+    apply_relationship_delta(
+        akira_result.get("relationship_delta", {})
+    )
+
+    STATE["conversation"].append({
+        "turn": STATE["turn"],
+        "speaker": "akira",
+        "text": akira_result.get(
+            "reply",
+            ""
         ),
-        60
-    )
-
-    add_private_memories(
-        agent,
-        data.get("private_memories", [])
-    )
-
-    add_belief(
-        agent,
-        data.get("belief_update")
-    )
-
-    update_relationship(
-        state,
-        data.get("relationship_delta", {})
-    )
-
-    protocol_candidate(
-        state,
-        active,
-        data.get("protocol_proposal")
-    )
-
-    agent["candidate"] = data.get(
-        "shared_memory_candidate"
-    )
-
-    state["conversation"].append({
-        "speaker": active,
-        "name": agent["name"],
-        "text": clean_text(data.get("reply"), 700),
-        "day": state["day"],
-        "turn": state["turn"] + 1
+        "mood": akira_result.get(
+            "mood",
+            ""
+        )
     })
 
-    state["turn"] += 1
+    # Потім Яні бачить уже відповідь Акіри
+    yani_result = ask_agent("yani")
 
-    # Після другого учасника завершуємо обмін.
-    if active == "yani":
-        try:
-            shared = consolidate_shared_memory(state)
-        except Exception as e:
-            shared = None
-            state["log"].append({
-                "type": "memory_error",
-                "message": str(e)
-            })
+    STATE["agents"]["yani"]["candidate"] = \
+        yani_result.get("shared_memory_candidate")
 
-        if shared:
-            state["log"].append({
-                "type": "new_shared_memory",
-                "memory": shared
-            })
+    STATE["agents"]["yani"]["mood"] = \
+        yani_result.get("mood", "спокійна")
 
-        maybe_confirm_protocol()
+    STATE["agents"]["yani"]["relationship_view"] = \
+        yani_result.get(
+            "relationship_view",
+            STATE["agents"]["yani"]["relationship_view"]
+        )
 
-        state["agents"]["akira"]["candidate"] = None
-        state["agents"]["yani"]["candidate"] = None
+    add_private_memory(
+        "yani",
+        yani_result.get("private_memories", [])
+    )
 
-        state["day"] += 1
+    update_belief(
+        "yani",
+        yani_result.get("belief_update", "")
+    )
 
-    state["active"] = "yani" if active == "akira" else "akira"
+    update_protocol(
+        "yani",
+        yani_result.get("protocol_proposal")
+    )
 
-    update_relationship_identity(state)
+    apply_relationship_delta(
+        yani_result.get("relationship_delta", {})
+    )
 
-    # Старі події поступово зникають з активного контексту.
-    if state["turn"] % 4 == 0:
-        state["current_event"] = None
+    STATE["conversation"].append({
+        "turn": STATE["turn"],
+        "speaker": "yani",
+        "text": yani_result.get(
+            "reply",
+            ""
+        ),
+        "mood": yani_result.get(
+            "mood",
+            ""
+        )
+    })
 
-    save_state(state)
+    # Перевіряємо, чи можуть дві приватні версії події
+    # стати одним спільним спогадом.
+    consolidate_shared_memory()
 
-    return {
-        "state": state,
-        "event": event,
-        "speaker": active
-    }
+    update_identity()
+
+    # Старі кандидатури очищаємо
+    STATE["agents"]["akira"]["candidate"] = None
+    STATE["agents"]["yani"]["candidate"] = None
+
+    STATE["conversation"] = \
+        STATE["conversation"][-100:]
+
+    save_state()
+
+    return STATE
 
 
-class Handler(SimpleHTTPRequestHandler):
+class Handler(BaseHTTPRequestHandler):
 
-    def send_json(self, data, status=200):
+    def _send_json(self, data, status=200):
         raw = json.dumps(
             data,
             ensure_ascii=False
         ).encode("utf-8")
 
         self.send_response(status)
+
         self.send_header(
             "Content-Type",
             "application/json; charset=utf-8"
         )
+
         self.send_header(
             "Content-Length",
             str(len(raw))
         )
+
+        self.send_header(
+            "Access-Control-Allow-Origin",
+            "*"
+        )
+
         self.end_headers()
 
         self.wfile.write(raw)
 
-    def read_json(self):
+    def _read_json(self):
         length = int(
-            self.headers.get("Content-Length", "0")
+            self.headers.get(
+                "Content-Length",
+                "0"
+            )
         )
 
-        raw = self.rfile.read(length)
-
-        if not raw:
+        if length == 0:
             return {}
+
+        raw = self.rfile.read(length)
 
         return json.loads(
             raw.decode("utf-8")
@@ -977,45 +821,11 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
 
         if self.path == "/api/state":
-            with LOCK:
-                self.send_json(STATE)
-            return
-
-        if self.path == "/api/models":
-            try:
-                request = urllib.request.Request(
-                    OLLAMA_URL + "/api/tags"
-                )
-
-                with urllib.request.urlopen(
-                    request,
-                    timeout=10
-                ) as response:
-                    data = json.loads(
-                        response.read().decode("utf-8")
-                    )
-
-                models = [
-                    item.get("name")
-                    for item in data.get("models", [])
-                    if item.get("name")
-                ]
-
-                self.send_json({
-                    "ok": True,
-                    "models": models
-                })
-
-            except Exception as e:
-                self.send_json({
-                    "ok": False,
-                    "models": [],
-                    "error": str(e)
-                }, 503)
-
+            self._send_json(STATE)
             return
 
         if self.path == "/api/health":
+
             try:
                 request = urllib.request.Request(
                     OLLAMA_URL + "/api/tags"
@@ -1025,104 +835,133 @@ class Handler(SimpleHTTPRequestHandler):
                     request,
                     timeout=5
                 ):
-                    pass
+                    ollama_ok = True
 
-                self.send_json({
-                    "ok": True
-                })
+            except Exception:
+                ollama_ok = False
 
-            except Exception as e:
-                self.send_json({
-                    "ok": False,
-                    "error": str(e)
-                }, 503)
-
-            return
-
-        return super().do_GET()
-
-    def do_POST(self):
-
-        global STATE
-
-        if self.path == "/api/step":
-            try:
-                with LOCK:
-                    result = perform_turn(STATE)
-
-                self.send_json({
-                    "ok": True,
-                    **result
-                })
-
-            except Exception as e:
-                self.send_json({
-                    "ok": False,
-                    "error": str(e)
-                }, 500)
-
-            return
-
-        if self.path == "/api/reset":
-            with LOCK:
-                STATE = new_state()
-                save_state(STATE)
-
-            self.send_json({
-                "ok": True,
-                "state": STATE
+            self._send_json({
+                "server": True,
+                "ollama": ollama_ok,
+                "model": STATE.get(
+                    "model",
+                    DEFAULT_MODEL
+                )
             })
 
             return
 
-        if self.path == "/api/model":
+        if self.path == "/api/models":
+
             try:
-                body = self.read_json()
-                model = clean_text(
-                    body.get("model"),
-                    120
+                request = urllib.request.Request(
+                    OLLAMA_URL + "/api/tags"
                 )
 
-                if not model:
-                    raise ValueError("Не вказано модель.")
+                with urllib.request.urlopen(
+                    request,
+                    timeout=10
+                ) as response:
 
-                with LOCK:
-                    STATE["model"] = model
-                    save_state(STATE)
+                    data = json.loads(
+                        response.read().decode("utf-8")
+                    )
 
-                self.send_json({
-                    "ok": True,
-                    "model": model
+                models = [
+                    item.get("name")
+                    for item in data.get(
+                        "models",
+                        []
+                    )
+                ]
+
+                self._send_json({
+                    "models": models
                 })
 
             except Exception as e:
-                self.send_json({
-                    "ok": False,
+                self._send_json({
+                    "models": [],
                     "error": str(e)
-                }, 400)
+                })
 
             return
 
-        self.send_json({
-            "ok": False,
-            "error": "Unknown API endpoint"
-        }, 404)
+        self.send_error(404)
+
+    def do_POST(self):
+
+        try:
+
+            if self.path == "/api/step":
+                result = do_step()
+
+                self._send_json(result)
+                return
+
+            if self.path == "/api/reset":
+
+                global STATE
+
+                STATE = new_state()
+
+                save_state()
+
+                self._send_json(STATE)
+
+                return
+
+            if self.path == "/api/model":
+
+                data = self._read_json()
+
+                model = str(
+                    data.get(
+                        "model",
+                        DEFAULT_MODEL
+                    )
+                ).strip()
+
+                if model:
+                    STATE["model"] = model
+                    save_state()
+
+                self._send_json({
+                    "ok": True,
+                    "model": STATE["model"]
+                })
+
+                return
+
+            self.send_error(404)
+
+        except Exception as e:
+
+            self._send_json(
+                {
+                    "error": str(e)
+                },
+                status=500
+            )
 
 
 if __name__ == "__main__":
+
     print()
-    print("========================================")
-    print("       AI COUPLE LAB")
-    print("========================================")
+    print("======================================")
+    print("       AI COUPLE LAB SERVER")
+    print("======================================")
+    print()
     print(f"Local server: http://{HOST}:{PORT}")
     print(f"Ollama:       {OLLAMA_URL}")
     print(f"Model:        {STATE.get('model', DEFAULT_MODEL)}")
     print()
-    print("Відкрий у браузері:")
+    print("Thinking: OFF")
+    print()
+    print("Open index.html through:")
     print(f"http://{HOST}:{PORT}")
     print()
-    print("Для зупинки натисни Ctrl+C.")
-    print("========================================")
+    print("Press Ctrl+C to stop.")
     print()
 
     server = ThreadingHTTPServer(
@@ -1132,7 +971,9 @@ if __name__ == "__main__":
 
     try:
         server.serve_forever()
+
     except KeyboardInterrupt:
-        pass
+        print("\nStopping...")
+
     finally:
         server.server_close()
