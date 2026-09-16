@@ -1,207 +1,280 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Гуменчат — тест профілів</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Експеримент з виникнення власної мови між двома ШІ-агентами">
+    <title>AI Language Lab — Експеримент</title>
 
-<style>
-html,body{
-  margin:0;
-  padding:0;
-  background:#fff;
-  font-family:Arial,Helvetica,sans-serif;
-  font-size:12px;
-  color:#222;
-}
-
-*{
-  box-sizing:border-box;
-}
-
-#site{
-  width:100%;
-  min-height:100vh;
-  padding:12px;
-  border:1px solid #777;
-}
-
-.header{
-  margin-bottom:10px;
-  padding:6px 8px;
-  background:linear-gradient(#626262,#3b3b3b);
-  border:1px solid #222;
-  color:#fff;
-  font-weight:bold;
-  letter-spacing:1px;
-}
-
-.profile-list{
-  max-width:700px;
-  margin:auto;
-}
-
-.profile-card{
-  display:flex;
-  gap:10px;
-  margin-bottom:8px;
-  padding:7px;
-  background:#f5f5f5;
-  border:1px solid #aaa;
-}
-
-.profile-card img{
-  width:80px;
-  height:80px;
-  object-fit:cover;
-  background:#ddd;
-  border:1px solid #888;
-}
-
-.profile-card-content{
-  flex:1;
-}
-
-.profile-name{
-  margin-bottom:5px;
-  font-weight:bold;
-  font-size:14px;
-}
-
-.profile-link{
-  color:#444;
-  text-decoration:underline;
-}
-
-.profile-link:hover{
-  color:#000;
-}
-
-.profile-description{
-  color:#666;
-  line-height:15px;
-}
-
-.footer{
-  margin-top:15px;
-  padding-top:5px;
-  border-top:1px solid #ccc;
-  color:#888;
-  text-align:center;
-  font-size:9px;
-}
-</style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div id="site">
+<header class="topbar">
+    <div>
+        <h1>AI Language Lab</h1>
+        <p>Експеримент із виникнення власного протоколу спілкування</p>
+    </div>
 
-<div class="header">
-ГУМЕНЧАТ — ТЕСТ ПРОФІЛІВ
-</div>
-
-<div class="profile-list">
-
-<div class="profile-card">
-
-<img
-src="assets/avatars/copy_pasta.jpg"
-alt="copy_pasta"
->
-
-<div class="profile-card-content">
-
-<div class="profile-name">
-copy_pasta
-</div>
-
-<div class="profile-description">
-Лінива, емоційна та трохи дивна.
-</div>
-
-<br>
-
-<a
-class="profile-link"
-href="profiles/copy_pasta.html"
->
-Відкрити профіль →
-</a>
-
-</div>
-
-</div>
+    <div class="status">
+        <span class="status-dot"></span>
+        Локальний режим
+    </div>
+</header>
 
 
-<div class="profile-card">
+<main class="layout">
 
-<img
-src="assets/avatars/dreaming_romance.jpg"
-alt="dreaming_romance"
->
+    <!-- ЛІВА КОЛОНКА -->
+    <section class="panel control-panel">
 
-<div class="profile-card-content">
+        <h2>Керування експериментом</h2>
 
-<div class="profile-name">
-dreaming_romance
-</div>
+        <div class="control-group">
 
-<div class="profile-description">
-Романтичний гумень, який завжди щось вигадує.
-</div>
+            <label for="rounds">
+                Кількість раундів
+            </label>
 
-<br>
+            <input
+                id="rounds"
+                type="number"
+                min="1"
+                max="1000000"
+                value="1000"
+            >
 
-<a
-class="profile-link"
-href="profiles/dreaming_romance.html"
->
-Відкрити профіль →
-</a>
-
-</div>
-
-</div>
+        </div>
 
 
-<div class="profile-card">
+        <div class="button-row">
 
-<img
-src="assets/avatars/sakurai_agatsuma.jpg"
-alt="sakurai_agatsuma"
->
+            <button id="trainBtn" class="primary">
+                ▶ Навчати
+            </button>
 
-<div class="profile-card-content">
+            <button id="stepBtn">
+                Один раунд
+            </button>
 
-<div class="profile-name">
-sakurai_agatsuma
-</div>
+            <button id="resetBtn" class="danger">
+                ↻ Скинути
+            </button>
 
-<div class="profile-description">
-Любить коментувати чужі дописи.
-</div>
+        </div>
 
-<br>
 
-<a
-class="profile-link"
-href="profiles/sakurai_agatsuma.html"
->
-Відкрити профіль →
-</a>
+        <div class="progress-box">
 
-</div>
+            <div class="progress-label">
+                <span>Навчання</span>
+                <span id="roundCounter">0</span>
+            </div>
 
-</div>
+            <div class="progress">
+                <div id="progressBar"></div>
+            </div>
 
-</div>
+        </div>
 
-<div class="footer">
-Гуменчат — тестова система профілів.
-</div>
 
-</div>
+        <h2>Початкові українські слова</h2>
+
+        <p class="hint">
+            Це початкові значення. Агенти можуть поступово
+            виробляти власні умовні позначення.
+        </p>
+
+        <div id="vocabulary" class="vocabulary"></div>
+
+
+        <h2>Параметри навчання</h2>
+
+        <div class="parameter">
+
+            <label>
+                Швидкість навчання
+                <span id="learningValue">0.20</span>
+            </label>
+
+            <input
+                id="learningRate"
+                type="range"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value="0.20"
+            >
+
+        </div>
+
+
+        <div class="parameter">
+
+            <label>
+                Дослідження нових слів
+                <span id="explorationValue">0.25</span>
+            </label>
+
+            <input
+                id="exploration"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.25"
+            >
+
+        </div>
+
+
+        <div class="sound-setting">
+
+            <label>
+                <input type="checkbox" id="soundEnabled" checked>
+                Звукові сигнали
+            </label>
+
+        </div>
+
+    </section>
+
+
+    <!-- ЦЕНТР -->
+    <section class="panel conversation-panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h2>Журнал комунікації</h2>
+                <p>Останні повідомлення агентів</p>
+            </div>
+
+            <button id="clearLogBtn">
+                Очистити
+            </button>
+
+        </div>
+
+
+        <div id="conversation" class="conversation">
+
+            <div class="empty-message">
+                Натисни «Навчати», щоб запустити експеримент.
+            </div>
+
+        </div>
+
+
+        <div class="current-round">
+
+            <div>
+                <span>Поточний раунд</span>
+                <strong id="currentRound">0</strong>
+            </div>
+
+            <div>
+                <span>Успішність</span>
+                <strong id="successRate">0%</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ПРАВА КОЛОНКА -->
+    <aside class="panel agent-panel">
+
+        <h2>Alice</h2>
+
+        <div class="agent-card alice">
+
+            <div class="agent-icon">A</div>
+
+            <div>
+                <strong>Ініціатор</strong>
+                <p>
+                    Формує повідомлення та намагається
+                    передати значення предмета.
+                </p>
+            </div>
+
+        </div>
+
+
+        <h3>Словник Alice</h3>
+
+        <div id="aliceDictionary" class="dictionary"></div>
+
+
+        <h2 class="bob-title">Bob</h2>
+
+        <div class="agent-card bob">
+
+            <div class="agent-icon">B</div>
+
+            <div>
+                <strong>Слухач</strong>
+                <p>
+                    Вчиться пов'язувати символи Alice
+                    з предметами.
+                </p>
+            </div>
+
+        </div>
+
+
+        <h3>Словник Bob</h3>
+
+        <div id="bobDictionary" class="dictionary"></div>
+
+    </aside>
+
+</main>
+
+
+<section class="panel bottom-panel">
+
+    <h2>Що тут відбувається?</h2>
+
+    <div class="explanation">
+
+        <p>
+            Alice отримує випадкове українське слово і повинна
+            передати його Bob. Спочатку символи мають випадкові
+            або слабкі асоціації.
+        </p>
+
+        <p>
+            Bob намагається визначити, яке слово було передане.
+            За правильну комунікацію агенти отримують винагороду.
+        </p>
+
+        <p>
+            Якщо агенти багато разів взаємодіють, вони можуть
+            сформувати стабільні асоціації між символами.
+            Це демонструє просту модель <b>emergent communication</b>.
+        </p>
+
+        <p class="warning">
+            Це симуляція навчання, а не справжня автономна
+            нейромережа. «Мова» тут виникає з таблиць значень
+            і правил навчання, заданих у JavaScript.
+        </p>
+
+    </div>
+
+</section>
+
+
+<footer>
+    AI Language Lab · працює локально у браузері · GitHub Pages
+</footer>
+
+
+<script src="script.js"></script>
 
 </body>
 </html>
