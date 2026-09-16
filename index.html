@@ -3,220 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Couple Lab — Яні & Акіра</title>
+
+    <title>AI Couple Lab — Акіра + Яні</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header class="topbar">
-    <div>
-        <h1>AI Couple Lab</h1>
-        <p>Експеримент із двома автономними агентами</p>
-    </div>
+<div class="page">
 
-    <div class="simulation-status">
-        <span id="statusDot" class="status-dot paused"></span>
-        <span id="simulationStatus">Пауза</span>
-    </div>
-</header>
-
-<main class="layout">
-
-    <!-- Акіра -->
-    <section class="agent-card akira-card">
-        <div class="agent-header">
-            <img id="akiraAvatar" class="avatar" alt="Акіра Бакенеко">
-
-            <div>
-                <h2>Акіра Бакенеко</h2>
-                <div class="agent-subtitle">чоловік · людина</div>
-                <div class="mood" id="akiraMood">спокійний</div>
-            </div>
+    <header class="topbar">
+        <div>
+            <h1>AI Couple Lab</h1>
+            <p>Два незалежні агенти · пам'ять · стосунки · спільні спогади</p>
         </div>
 
-        <div class="thought-box">
-            <div class="small-title">Поточна думка</div>
-            <div id="akiraThought">...</div>
+        <div class="status-area">
+            <span id="serverStatus" class="status offline">
+                перевірка...
+            </span>
+        </div>
+    </header>
+
+
+    <section class="control-panel">
+
+        <div class="control-group">
+            <label for="modelSelect">Модель</label>
+
+            <select id="modelSelect">
+                <option value="">завантаження...</option>
+            </select>
+
+            <button id="refreshModels">
+                ↻
+            </button>
         </div>
 
-        <div class="stats">
-            <div class="stat">
-                <span>Прихильність</span>
-                <div class="bar"><div id="akiraAffectionBar"></div></div>
-                <b id="akiraAffection">0</b>
-            </div>
+        <div class="control-group buttons">
 
-            <div class="stat">
-                <span>Довіра</span>
-                <div class="bar"><div id="akiraTrustBar"></div></div>
-                <b id="akiraTrust">0</b>
-            </div>
-
-            <div class="stat">
-                <span>Близькість</span>
-                <div class="bar"><div id="akiraClosenessBar"></div></div>
-                <b id="akiraCloseness">0</b>
-            </div>
-        </div>
-
-        <div class="memory-panel">
-            <h3>Пам'ять Акіри</h3>
-            <div id="akiraMemory"></div>
-        </div>
-    </section>
-
-
-    <!-- Центр -->
-    <section class="center-panel">
-
-        <div class="relationship-panel">
-            <div class="relationship-title">
-                <span>Яні</span>
-                <div class="heart" id="heart">♥</div>
-                <span>Акіра</span>
-            </div>
-
-            <div class="relationship-state" id="relationshipState">
-                знайомі
-            </div>
-
-            <div class="relationship-stats">
-
-                <div>
-                    <span>Любов</span>
-                    <strong id="loveValue">0</strong>
-                </div>
-
-                <div>
-                    <span>Довіра</span>
-                    <strong id="trustValue">0</strong>
-                </div>
-
-                <div>
-                    <span>Близькість</span>
-                    <strong id="closenessValue">0</strong>
-                </div>
-
-                <div>
-                    <span>Напруга</span>
-                    <strong id="tensionValue">0</strong>
-                </div>
-
-            </div>
-        </div>
-
-
-        <div class="photo-memory">
-            <h3>Спільна пам'ять</h3>
-
-            <div class="photos">
-
-                <div class="photo-card">
-                    <img id="winterPhoto" alt="Зимове побачення">
-                    <div>
-                        <b>Зимове побачення</b>
-                        <span>місто · зима</span>
-                    </div>
-                </div>
-
-                <div class="photo-card">
-                    <img id="summerPhoto" alt="Літнє побачення">
-                    <div>
-                        <b>Літнє побачення</b>
-                        <span>село · літо</span>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-
-        <div class="conversation">
-            <div class="conversation-header">
-                <h3>Спілкування</h3>
-                <span id="messageCount">0 повідомлень</span>
-            </div>
-
-            <div id="chat"></div>
-        </div>
-
-
-        <div class="controls">
-
-            <button id="startBtn" class="primary">
-                ▶ Запустити
+            <button id="stepButton" class="main-button">
+                ▶ Наступний хід
             </button>
 
-            <button id="pauseBtn">
-                ⏸ Пауза
+            <button id="autoButton">
+                Автоматично
             </button>
 
-            <button id="stepBtn">
-                ▶ Один крок
+            <button id="stopButton">
+                Стоп
             </button>
 
-            <button id="eventBtn">
-                ✦ Подія
+            <button id="resetButton" class="danger">
+                Скинути
             </button>
 
-            <button id="resetBtn" class="danger">
-                ↻ Скинути
-            </button>
-
-        </div>
-
-        <div class="speed-control">
-            <label for="speed">
-                Швидкість симуляції:
-                <span id="speedLabel">4 сек.</span>
-            </label>
-
-            <input
-                id="speed"
-                type="range"
-                min="1"
-                max="10"
-                value="4"
-            >
         </div>
 
     </section>
 
 
-    <!-- Спостерігач -->
-    <aside class="observer-panel">
+    <main class="layout">
 
-        <h2>Спостерігач</h2>
+        <!-- АКІРА -->
 
-        <div class="clock">
-            <span>День симуляції</span>
-            <strong id="dayCounter">1</strong>
-        </div>
+        <aside class="agent-card akira-card">
 
-        <div class="observer-section">
-            <h3>Стан Яні</h3>
-            <div id="yaniState"></div>
-        </div>
+            <div class="agent-head">
+                <img id="akiraAvatar" class="avatar" alt="Акіра">
 
-        <div class="observer-section">
-            <h3>Стан Акіри</h3>
-            <div id="akiraState"></div>
-        </div>
+                <div>
+                    <h2>Акіра Бакенеко</h2>
+                    <span class="role">чоловік · людина</span>
+                </div>
+            </div>
 
-        <div class="observer-section">
-            <h3>Вивчені слова</h3>
-            <div id="learnedWords"></div>
-        </div>
+            <div class="agent-state">
 
-        <div class="observer-section">
-            <h3>Журнал подій</h3>
-            <div id="eventLog"></div>
-        </div>
+                <div class="state-row">
+                    <span>Настрій</span>
+                    <strong id="akiraMood">—</strong>
+                </div>
 
-    </aside>
+                <div class="state-row">
+                    <span>Бачення стосунків</span>
+                    <strong id="akiraRelation">—</strong>
+                </div>
 
-</main>
+            </div>
+
+
+            <section class="mini-section">
+
+                <h3>Його пам'ять</h3>
+
+                <div id="akiraMemories"
+                     class="memory-list">
+                </div>
+
+            </section>
+
+
+            <section class="mini-section">
+
+                <h3>Його висновки</h3>
+
+                <div id="akiraBeliefs"
+                     class="belief-list">
+                </div>
+
+            </section>
+
+        </aside>
+
+
+        <!-- ЦЕНТР -->
+
+        <section class="center-column">
+
+            <div class="relationship-card">
+
+                <div class="relationship-title">
+                    <div>
+                        <span class="small-label">
+                            Поточна модель стосунків
+                        </span>
+
+                        <h2 id="relationshipIdentity">
+                            знайомі
+                        </h2>
+                    </div>
+
+                    <div class="day-box">
+                        День
+                        <strong id="dayNumber">1</strong>
+                    </div>
+                </div>
+
+
+                <div class="meters">
+
+                    <div class="meter">
+                        <div>
+                            <span>Прихильність</span>
+                            <b id="loveValue">0</b>
+                        </div>
+                        <div class="meter-track">
+                            <div id="loveBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="meter">
+                        <div>
+                            <span>Довіра</span>
+                            <b id="trustValue">0</b>
+                        </div>
+                        <div class="meter-track">
+                            <div id="trustBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="meter">
+                        <div>
+                            <span>Близькість</span>
+                            <b id="closenessValue">0</b>
+                        </div>
+                        <div class="meter-track">
+                            <div id="closenessBar"></div>
+                        </div>
+                    </div>
+
+                    <div class="meter">
+                        <div>
+                            <span>Напруга</span>
+                            <b id="tensionValue">0</b>
+                        </div>
+                        <div class="meter-track">
+                            <div id="tensionBar"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ПОТОЧНА ПОДІЯ -->
+
+            <div class="event-card" id="eventCard">
+
+                <div class="event-icon">✦</div>
+
+                <div>
+                    <span class="small-label">
+                        Поточна подія
+                    </span>
+
+                    <h3 id="eventTitle">
+                        Поки нічого особливого не відбувається
+                    </h3>
+
+                    <p id="eventDescription">
+                        Натисни «Наступний хід», щоб агенти почали взаємодію.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- РОЗМОВА -->
+
+            <section class="conversation-card">
+
+                <div class="section-header">
+                    <h2>Розмова</h2>
+
+                    <span id="activeSpeaker">
+                        очікування
+                    </span>
+                </div>
+
+                <div id="conversation"
+                     class="conversation">
+                </div>
+
+            </section>
+
+
+            <!-- СПІЛЬНІ СПОГАДИ -->
+
+            <section class="shared-card">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Спільні спогади</h2>
+                        <p>
+                            Те, що поступово стало частиною їхньої спільної історії.
+                        </p>
+                    </div>
+
+                    <span id="memoryCount">0</span>
+                </div>
+
+                <div id="sharedMemories"
+                     class="shared-memory-list">
+                </div>
+
+            </section>
+
+
+            <!-- ЇХНІ СЛОВА -->
+
+            <section class="protocol-card">
+
+                <div class="section-header">
+                    <div>
+                        <h2>Власний протокол</h2>
+                        <p>
+                            Слова, які вони почали використовувати між собою.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="protocolList"
+                     class="protocol-list">
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- ЯНІ -->
+
+        <aside class="agent-card yani-card">
+
+            <div class="agent-head">
+
+                <img id="yaniAvatar"
+                     class="avatar"
+                     alt="Яні">
+
+                <div>
+                    <h2>Яні Куронеко</h2>
+                    <span class="role">
+                        жінка · котовуха істота
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="agent-state">
+
+                <div class="state-row">
+                    <span>Настрій</span>
+                    <strong id="yaniMood">—</strong>
+                </div>
+
+                <div class="state-row">
+                    <span>Бачення стосунків</span>
+                    <strong id="yaniRelation">—</strong>
+                </div>
+
+            </div>
+
+
+            <section class="mini-section">
+
+                <h3>Її пам'ять</h3>
+
+                <div id="yaniMemories"
+                     class="memory-list">
+                </div>
+
+            </section>
+
+
+            <section class="mini-section">
+
+                <h3>Її висновки</h3>
+
+                <div id="yaniBeliefs"
+                     class="belief-list">
+                </div>
+
+            </section>
+
+        </aside>
+
+    </main>
+
+
+    <footer>
+
+        <span>
+            AI Couple Lab · локальна симуляція
+        </span>
+
+        <span id="turnInfo">
+            Хід: 0
+        </span>
+
+    </footer>
+
+</div>
 
 <script src="script.js"></script>
 
