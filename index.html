@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Експеримент з виникнення власної мови між двома ШІ-агентами">
-    <title>AI Language Lab — Експеримент</title>
-
+    <title>AI Couple Lab — Яні & Акіра</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,49 +11,153 @@
 
 <header class="topbar">
     <div>
-        <h1>AI Language Lab</h1>
-        <p>Експеримент із виникнення власного протоколу спілкування</p>
+        <h1>AI Couple Lab</h1>
+        <p>Експеримент із двома автономними агентами</p>
     </div>
 
-    <div class="status">
-        <span class="status-dot"></span>
-        Локальний режим
+    <div class="simulation-status">
+        <span id="statusDot" class="status-dot paused"></span>
+        <span id="simulationStatus">Пауза</span>
     </div>
 </header>
 
-
 <main class="layout">
 
-    <!-- ЛІВА КОЛОНКА -->
-    <section class="panel control-panel">
+    <!-- Акіра -->
+    <section class="agent-card akira-card">
+        <div class="agent-header">
+            <img id="akiraAvatar" class="avatar" alt="Акіра Бакенеко">
 
-        <h2>Керування експериментом</h2>
+            <div>
+                <h2>Акіра Бакенеко</h2>
+                <div class="agent-subtitle">чоловік · людина</div>
+                <div class="mood" id="akiraMood">спокійний</div>
+            </div>
+        </div>
 
-        <div class="control-group">
+        <div class="thought-box">
+            <div class="small-title">Поточна думка</div>
+            <div id="akiraThought">...</div>
+        </div>
 
-            <label for="rounds">
-                Кількість раундів
-            </label>
+        <div class="stats">
+            <div class="stat">
+                <span>Прихильність</span>
+                <div class="bar"><div id="akiraAffectionBar"></div></div>
+                <b id="akiraAffection">0</b>
+            </div>
 
-            <input
-                id="rounds"
-                type="number"
-                min="1"
-                max="1000000"
-                value="1000"
-            >
+            <div class="stat">
+                <span>Довіра</span>
+                <div class="bar"><div id="akiraTrustBar"></div></div>
+                <b id="akiraTrust">0</b>
+            </div>
 
+            <div class="stat">
+                <span>Близькість</span>
+                <div class="bar"><div id="akiraClosenessBar"></div></div>
+                <b id="akiraCloseness">0</b>
+            </div>
+        </div>
+
+        <div class="memory-panel">
+            <h3>Пам'ять Акіри</h3>
+            <div id="akiraMemory"></div>
+        </div>
+    </section>
+
+
+    <!-- Центр -->
+    <section class="center-panel">
+
+        <div class="relationship-panel">
+            <div class="relationship-title">
+                <span>Яні</span>
+                <div class="heart" id="heart">♥</div>
+                <span>Акіра</span>
+            </div>
+
+            <div class="relationship-state" id="relationshipState">
+                знайомі
+            </div>
+
+            <div class="relationship-stats">
+
+                <div>
+                    <span>Любов</span>
+                    <strong id="loveValue">0</strong>
+                </div>
+
+                <div>
+                    <span>Довіра</span>
+                    <strong id="trustValue">0</strong>
+                </div>
+
+                <div>
+                    <span>Близькість</span>
+                    <strong id="closenessValue">0</strong>
+                </div>
+
+                <div>
+                    <span>Напруга</span>
+                    <strong id="tensionValue">0</strong>
+                </div>
+
+            </div>
         </div>
 
 
-        <div class="button-row">
+        <div class="photo-memory">
+            <h3>Спільна пам'ять</h3>
 
-            <button id="trainBtn" class="primary">
-                ▶ Навчати
+            <div class="photos">
+
+                <div class="photo-card">
+                    <img id="winterPhoto" alt="Зимове побачення">
+                    <div>
+                        <b>Зимове побачення</b>
+                        <span>місто · зима</span>
+                    </div>
+                </div>
+
+                <div class="photo-card">
+                    <img id="summerPhoto" alt="Літнє побачення">
+                    <div>
+                        <b>Літнє побачення</b>
+                        <span>село · літо</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="conversation">
+            <div class="conversation-header">
+                <h3>Спілкування</h3>
+                <span id="messageCount">0 повідомлень</span>
+            </div>
+
+            <div id="chat"></div>
+        </div>
+
+
+        <div class="controls">
+
+            <button id="startBtn" class="primary">
+                ▶ Запустити
+            </button>
+
+            <button id="pauseBtn">
+                ⏸ Пауза
             </button>
 
             <button id="stepBtn">
-                Один раунд
+                ▶ Один крок
+            </button>
+
+            <button id="eventBtn">
+                ✦ Подія
             </button>
 
             <button id="resetBtn" class="danger">
@@ -64,215 +166,57 @@
 
         </div>
 
-
-        <div class="progress-box">
-
-            <div class="progress-label">
-                <span>Навчання</span>
-                <span id="roundCounter">0</span>
-            </div>
-
-            <div class="progress">
-                <div id="progressBar"></div>
-            </div>
-
-        </div>
-
-
-        <h2>Початкові українські слова</h2>
-
-        <p class="hint">
-            Це початкові значення. Агенти можуть поступово
-            виробляти власні умовні позначення.
-        </p>
-
-        <div id="vocabulary" class="vocabulary"></div>
-
-
-        <h2>Параметри навчання</h2>
-
-        <div class="parameter">
-
-            <label>
-                Швидкість навчання
-                <span id="learningValue">0.20</span>
+        <div class="speed-control">
+            <label for="speed">
+                Швидкість симуляції:
+                <span id="speedLabel">4 сек.</span>
             </label>
 
             <input
-                id="learningRate"
+                id="speed"
                 type="range"
-                min="0.01"
-                max="1"
-                step="0.01"
-                value="0.20"
+                min="1"
+                max="10"
+                value="4"
             >
-
-        </div>
-
-
-        <div class="parameter">
-
-            <label>
-                Дослідження нових слів
-                <span id="explorationValue">0.25</span>
-            </label>
-
-            <input
-                id="exploration"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value="0.25"
-            >
-
-        </div>
-
-
-        <div class="sound-setting">
-
-            <label>
-                <input type="checkbox" id="soundEnabled" checked>
-                Звукові сигнали
-            </label>
-
         </div>
 
     </section>
 
 
-    <!-- ЦЕНТР -->
-    <section class="panel conversation-panel">
+    <!-- Спостерігач -->
+    <aside class="observer-panel">
 
-        <div class="panel-title">
+        <h2>Спостерігач</h2>
 
-            <div>
-                <h2>Журнал комунікації</h2>
-                <p>Останні повідомлення агентів</p>
-            </div>
-
-            <button id="clearLogBtn">
-                Очистити
-            </button>
-
+        <div class="clock">
+            <span>День симуляції</span>
+            <strong id="dayCounter">1</strong>
         </div>
 
-
-        <div id="conversation" class="conversation">
-
-            <div class="empty-message">
-                Натисни «Навчати», щоб запустити експеримент.
-            </div>
-
+        <div class="observer-section">
+            <h3>Стан Яні</h3>
+            <div id="yaniState"></div>
         </div>
 
-
-        <div class="current-round">
-
-            <div>
-                <span>Поточний раунд</span>
-                <strong id="currentRound">0</strong>
-            </div>
-
-            <div>
-                <span>Успішність</span>
-                <strong id="successRate">0%</strong>
-            </div>
-
+        <div class="observer-section">
+            <h3>Стан Акіри</h3>
+            <div id="akiraState"></div>
         </div>
 
-    </section>
-
-
-    <!-- ПРАВА КОЛОНКА -->
-    <aside class="panel agent-panel">
-
-        <h2>Alice</h2>
-
-        <div class="agent-card alice">
-
-            <div class="agent-icon">A</div>
-
-            <div>
-                <strong>Ініціатор</strong>
-                <p>
-                    Формує повідомлення та намагається
-                    передати значення предмета.
-                </p>
-            </div>
-
+        <div class="observer-section">
+            <h3>Вивчені слова</h3>
+            <div id="learnedWords"></div>
         </div>
 
-
-        <h3>Словник Alice</h3>
-
-        <div id="aliceDictionary" class="dictionary"></div>
-
-
-        <h2 class="bob-title">Bob</h2>
-
-        <div class="agent-card bob">
-
-            <div class="agent-icon">B</div>
-
-            <div>
-                <strong>Слухач</strong>
-                <p>
-                    Вчиться пов'язувати символи Alice
-                    з предметами.
-                </p>
-            </div>
-
+        <div class="observer-section">
+            <h3>Журнал подій</h3>
+            <div id="eventLog"></div>
         </div>
-
-
-        <h3>Словник Bob</h3>
-
-        <div id="bobDictionary" class="dictionary"></div>
 
     </aside>
 
 </main>
-
-
-<section class="panel bottom-panel">
-
-    <h2>Що тут відбувається?</h2>
-
-    <div class="explanation">
-
-        <p>
-            Alice отримує випадкове українське слово і повинна
-            передати його Bob. Спочатку символи мають випадкові
-            або слабкі асоціації.
-        </p>
-
-        <p>
-            Bob намагається визначити, яке слово було передане.
-            За правильну комунікацію агенти отримують винагороду.
-        </p>
-
-        <p>
-            Якщо агенти багато разів взаємодіють, вони можуть
-            сформувати стабільні асоціації між символами.
-            Це демонструє просту модель <b>emergent communication</b>.
-        </p>
-
-        <p class="warning">
-            Це симуляція навчання, а не справжня автономна
-            нейромережа. «Мова» тут виникає з таблиць значень
-            і правил навчання, заданих у JavaScript.
-        </p>
-
-    </div>
-
-</section>
-
-
-<footer>
-    AI Language Lab · працює локально у браузері · GitHub Pages
-</footer>
-
 
 <script src="script.js"></script>
 
