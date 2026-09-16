@@ -3,17 +3,20 @@
 // Custom ONNX engine bootstrap
 // =========================================================
 
-const MODEL_BASE =
+const SMALL_LLM_MODEL_BASE =
     "https://huggingface.co/onnx-community/SmolLM2-135M-Instruct-ONNX/resolve/main/";
 
-const MODEL_URL =
-    MODEL_BASE + "onnx/model_q4f16.onnx";
+const SMALL_LLM_MODEL_URL =
+    SMALL_LLM_MODEL_BASE +
+    "onnx/model_q4f16.onnx";
 
-const TOKENIZER_URL =
-    MODEL_BASE + "tokenizer.json";
+const SMALL_LLM_TOKENIZER_URL =
+    SMALL_LLM_MODEL_BASE +
+    "tokenizer.json";
 
-const CONFIG_URL =
-    MODEL_BASE + "config.json";
+const SMALL_LLM_CONFIG_URL =
+    SMALL_LLM_MODEL_BASE +
+    "config.json";
 
 
 class SmallLLM {
@@ -84,7 +87,7 @@ class SmallLLM {
 
         const configResponse =
             await fetch(
-                CONFIG_URL,
+                SMALL_LLM_CONFIG_URL,
                 {
                     cache: "force-cache"
                 }
@@ -127,7 +130,7 @@ class SmallLLM {
                 new Tokenizer();
 
             await this.tokenizer.load(
-                TOKENIZER_URL
+                SMALL_LLM_TOKENIZER_URL
             );
 
         } else {
@@ -167,7 +170,7 @@ class SmallLLM {
 
 
         await this.model.load(
-            MODEL_URL
+           SMALL_LLM_MODEL_URL
         );
 
 
