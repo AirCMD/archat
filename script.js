@@ -1414,3 +1414,23 @@ document.addEventListener(
         );
     }
 );
+// --------------------------------
+window.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+
+        console.log("[TEST] Створюю AI...");
+
+        const ai = new SmallLLM();
+
+        await ai.load();
+
+        console.log("[TEST] AI завантажений.");
+
+    } catch (error) {
+
+        console.error("[TEST] Помилка:", error);
+
+    }
+
+});
